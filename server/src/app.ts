@@ -36,19 +36,23 @@ app.use((req: Request, res: Response) => {
 app.use(errorHandler);
 
 // Connect to MongoDB and start HTTP server
+
 async function startServer() {
   await connectDatabase();
 
-  const server = app.listen(ENV.PORT, () => {
-    console.log(`====================================================`);
-    console.log(`🚀 CourtBook API Server running on port ${ENV.PORT}`);
-    console.log(`📡 Base URL: http://localhost:${ENV.PORT}/api`);
-    console.log(`🏥 Health check: http://localhost:${ENV.PORT}/api/health`);
-    console.log(`====================================================`);
+  const PORT = Number(process.env.PORT || ENV.PORT);
+
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log('====================================================');
+    console.log(`🚀 CourtBook API Server running on port ${PORT}`);
+    console.log(`📡 Base URL: http://localhost:${PORT}/api`);
+    console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+    console.log('====================================================');
   });
 
   return server;
 }
+
 
 if (process.env.NODE_ENV !== 'test') {
   startServer();
