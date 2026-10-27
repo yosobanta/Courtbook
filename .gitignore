@@ -18,6 +18,8 @@ local.properties
 server/node_modules/
 server/dist/
 server/coverage/
+server/.env
+server/.env.example
 
 # Python, if applicable
 __pycache__/
@@ -49,4 +51,3 @@ server/dist/
 # Secrets
 .env
 .env.*
-!.env.example
