@@ -1,0 +1,52 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+*.jks
+*.keystore
+
+# IDE
+.idea/
+.vscode/
+
+# Node.js backend
+server/node_modules/
+server/dist/
+server/coverage/
+
+# Python, if applicable
+__pycache__/
+.venv/
+venv/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+**/.idea/
+
+# Gradle generated files
+.gradle/
+**/.gradle/
+**/build/
+
+# Android local configuration
+local.properties
+**/local.properties
+
+# Node.js
+node_modules/
+**/node_modules/
+server/dist/
+
+# Secrets
+.env
+.env.*
+!.env.example
