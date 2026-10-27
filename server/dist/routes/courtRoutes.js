@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const courtController_1 = require("../controllers/courtController");
+const slotController_1 = require("../controllers/slotController");
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
+router.get('/nearby', courtController_1.CourtController.getNearbyCourts);
+router.get('/', courtController_1.CourtController.getCourts);
+router.get('/:id', courtController_1.CourtController.getCourtById);
+router.get('/:id/slots', slotController_1.SlotController.getCourtSlots);
+router.post('/', auth_1.authenticate, (0, auth_1.authorize)('ADMIN'), courtController_1.CourtController.createCourt);
+exports.default = router;

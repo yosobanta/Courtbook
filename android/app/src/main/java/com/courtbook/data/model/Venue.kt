@@ -1,0 +1,36 @@
+package com.courtbook.data.model
+
+import com.google.gson.annotations.SerializedName
+
+data class VenueDto(
+    @SerializedName("_id") val id: String,
+    @SerializedName("name") val name: String,
+    @SerializedName("description") val description: String = "",
+    @SerializedName("address") val address: String,
+    @SerializedName("city") val city: String,
+    @SerializedName("location") val location: LocationDto? = null,
+    @SerializedName("amenities") val amenities: List<String> = emptyList(),
+    @SerializedName("operatingHours") val operatingHours: OperatingHoursDto? = null,
+    @SerializedName("images") val images: List<String> = emptyList(),
+    @SerializedName("rating") val rating: RatingDto? = null,
+    @SerializedName("distanceKm") val distanceKm: Double? = null,
+    @SerializedName("courts") val courts: List<CourtDto> = emptyList()
+)
+
+data class LocationDto(
+    @SerializedName("type") val type: String = "Point",
+    @SerializedName("coordinates") val coordinates: List<Double> = emptyList() // [lng, lat]
+) {
+    val longitude: Double get() = coordinates.getOrNull(0) ?: 0.0
+    val latitude: Double get() = coordinates.getOrNull(1) ?: 0.0
+}
+
+data class OperatingHoursDto(
+    @SerializedName("open") val open: String = "06:00",
+    @SerializedName("close") val close: String = "23:00"
+)
+
+data class RatingDto(
+    @SerializedName("average") val average: Double = 4.5,
+    @SerializedName("count") val count: Int = 0
+)
