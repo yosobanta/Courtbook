@@ -27,6 +27,8 @@ class AIInsightsViewModel(
 
     private var cachedSynthetic: List<SyntheticBooking> = emptyList()
     private var cachedRealSummaries: List<RealBookingSummary> = emptyList()
+    private var cachedTotalRevenue: Double = 0.0
+    private var cachedRealCount: Int = 0
 
     init {
         loadData()
@@ -51,13 +53,16 @@ class AIInsightsViewModel(
             availableSports = sports,
             isAdmin = isAdmin,
             realBookingCount = 0,
+            actualTotalRevenue = 0.0,
             realDataAvailable = false
         )
 
         // 2. Asynchronously fetch real bookings from backend
         viewModelScope.launch {
-            val (realSummaries, totalRealCount) = repository.getRealBookingSummaries()
+            val (realSummaries, totalRealCount, totalRevenue) = repository.getRealBookingData()
             cachedRealSummaries = realSummaries
+            cachedRealCount = totalRealCount
+            cachedTotalRevenue = totalRevenue
 
             val hasRealData = totalRealCount > 0
             val currentSynthetic = if (_uiState.value.simulatedBookingsCount > 0) {
@@ -70,13 +75,16 @@ class AIInsightsViewModel(
                 syntheticData = currentSynthetic,
                 realSummaries = cachedRealSummaries,
                 sportFilter = _uiState.value.selectedSport,
-                horizonDays = _uiState.value.forecastHorizon
+                horizonDays = _uiState.value.forecastHorizon,
+                actualRevenue = totalRevenue,
+                actualBookingCount = totalRealCount
             )
 
             _uiState.value = _uiState.value.copy(
                 forecast = blendedForecast,
                 realBookingCount = totalRealCount,
                 actualTotalBookings = totalRealCount,
+                actualTotalRevenue = totalRevenue,
                 realDataAvailable = hasRealData
             )
         }
@@ -116,7 +124,9 @@ class AIInsightsViewModel(
             syntheticData = synthetic,
             realSummaries = cachedRealSummaries,
             sportFilter = state.selectedSport,
-            horizonDays = state.forecastHorizon
+            horizonDays = state.forecastHorizon,
+            actualRevenue = cachedTotalRevenue,
+            actualBookingCount = cachedRealCount
         )
 
         _uiState.value = state.copy(forecast = updatedForecast)

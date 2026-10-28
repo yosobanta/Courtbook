@@ -90,10 +90,42 @@ class CourtViewModel(private val repository: CourtRepository = CourtRepository()
     viewModelScope.launch {
       val result = repository.getCourtSlots(courtId, _uiState.value.selectedDate)
       result.fold(
-          onSuccess = { slots ->
+          onSuccess = { rawSlots ->
+            val court = _uiState.value.court
+            val isWeekend = try {
+              val cal = Calendar.getInstance().apply {
+                time = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(_uiState.value.selectedDate) ?: Date()
+              }
+              val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
+              dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY
+            } catch (_: Exception) {
+              false
+            }
+
+            val weekdayRate = court?.pricing?.weekday ?: (court?.basePrice ?: 400.0)
+            val weekendRate = court?.pricing?.weekend ?: ((court?.basePrice ?: 400.0) + 100.0)
+            val peakRate = court?.pricing?.peak ?: ((court?.basePrice ?: 400.0) + 150.0)
+
+            val slots = rawSlots.map { slot ->
+              val startH = slot.startTime.split(":").firstOrNull()?.toIntOrNull() ?: 12
+              val isPeak = (startH in 6..8) || (startH in 17..20)
+              val expectedPrice = when {
+                isPeak -> peakRate
+                isWeekend -> weekendRate
+                else -> weekdayRate
+              }
+              if (slot.isAvailable || slot.isHeld) {
+                slot.copy(price = expectedPrice)
+              } else {
+                slot
+              }
+            }
+
             // Check if any slots are held by this user
             val myHeld = slots.filter { it.isHeldByMe(currentUserId) && !it.isHoldExpired() }
-            val currentSelected = _uiState.value.selectedSlots.filter { sel ->
+            val currentSelected = _uiState.value.selectedSlots.map { sel ->
+              slots.find { it.id == sel.id } ?: sel
+            }.filter { sel ->
               slots.any { it.id == sel.id && (it.isAvailable || (it.isHeldByMe(currentUserId) && !it.isHoldExpired())) }
             }.toMutableList()
 

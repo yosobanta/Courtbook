@@ -142,6 +142,8 @@ export class CourtController {
         normalizedImages = venue.images;
       }
 
+      const finalPricing = pricing || { weekday: basePrice, weekend: basePrice + 100, peak: basePrice + 150 };
+
       const court = new Court({
         venueId,
         name,
@@ -150,13 +152,19 @@ export class CourtController {
         surfaceType: surfaceType || 'SYNTHETIC',
         capacity: capacity || 4,
         basePrice,
-        pricing: pricing || { weekday: basePrice, weekend: basePrice + 100, peak: basePrice + 150 },
+        pricing: finalPricing,
         images: normalizedImages,
       });
 
       await court.save();
 
-      // Automatically generate 7 days of bookable slots
+      // Automatically generate 7 days of bookable slots with correct per-tier pricing
+      const isPeakHour = (hour: number): boolean => (hour >= 6 && hour < 9) || (hour >= 17 && hour < 21);
+      const isWeekend = (dateStr: string): boolean => {
+        const day = new Date(dateStr).getDay();
+        return day === 0 || day === 6;
+      };
+
       const now = new Date();
       const slotsToInsert = [];
       for (let day = 0; day < 7; day++) {
@@ -166,13 +174,21 @@ export class CourtController {
         for (let hour = 6; hour < 23; hour++) {
           const startTime = `${hour.toString().padStart(2, '0')}:00`;
           const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
+          let slotPrice: number;
+          if (isPeakHour(hour)) {
+            slotPrice = finalPricing.peak;
+          } else if (isWeekend(dateStr)) {
+            slotPrice = finalPricing.weekend;
+          } else {
+            slotPrice = finalPricing.weekday;
+          }
           slotsToInsert.push({
             courtId: court._id,
             venueId: venue._id,
             date: dateStr,
             startTime,
             endTime,
-            price: basePrice,
+            price: slotPrice,
             status: 'AVAILABLE',
           });
         }
@@ -197,6 +213,8 @@ export class CourtController {
         throw new NotFoundError('Court not found');
       }
 
+      const priceChanged = basePrice !== undefined || pricing !== undefined;
+
       if (name !== undefined) court.name = name;
       if (sport !== undefined) court.sport = sport.toUpperCase();
       if (isIndoor !== undefined) court.isIndoor = isIndoor;
@@ -209,7 +227,7 @@ export class CourtController {
           court.pricing = {
             weekday: basePrice,
             weekend: basePrice + 100,
-            peak: basePrice + 150
+            peak: basePrice + 150,
           };
         }
       }
@@ -218,6 +236,73 @@ export class CourtController {
       if (isActive !== undefined) court.isActive = isActive;
 
       await court.save();
+
+      // ── Propagate updated prices to all future AVAILABLE/HELD slots ─────
+      // Runs only when basePrice or per-tier pricing actually changed.
+      // BOOKED and BLOCKED slots are intentionally left untouched.
+      if (priceChanged) {
+        const today = new Date().toISOString().split('T')[0];
+        const finalPricing = court.pricing;
+
+        // PEAK hours: 06:00–09:00 and 17:00–21:00
+        const isPeakHour = (startTime: string): boolean => {
+          const h = parseInt(startTime.split(':')[0], 10);
+          return (h >= 6 && h < 9) || (h >= 17 && h < 21);
+        };
+
+        // Weekend: Saturday (6) or Sunday (0)
+        const isWeekend = (dateStr: string): boolean => {
+          const parts = dateStr.split('-').map(Number);
+          if (parts.length === 3) {
+            const d = new Date(parts[0], parts[1] - 1, parts[2]);
+            const day = d.getDay();
+            return day === 0 || day === 6;
+          }
+          const day = new Date(dateStr).getDay();
+          return day === 0 || day === 6;
+        };
+
+        const weekdayRate = court.pricing?.weekday && court.pricing.weekday > 0
+          ? court.pricing.weekday
+          : court.basePrice;
+        const weekendRate = court.pricing?.weekend && court.pricing.weekend > 0
+          ? court.pricing.weekend
+          : (weekdayRate + 100);
+        const peakRate = court.pricing?.peak && court.pricing.peak > 0
+          ? court.pricing.peak
+          : (weekdayRate + 150);
+
+        // Fetch all future non-booked, non-blocked slots for this court
+        const futureSlots = await Slot.find({
+          courtId: court._id,
+          date: { $gte: today },
+          status: { $in: ['AVAILABLE', 'HELD'] },
+        }).select('_id date startTime');
+
+        if (futureSlots.length > 0) {
+          const bulkOps = futureSlots.map((slot) => {
+            let price: number;
+            if (isPeakHour(slot.startTime)) {
+              price = peakRate;
+            } else if (isWeekend(slot.date)) {
+              price = weekendRate;
+            } else {
+              price = weekdayRate;
+            }
+
+            return {
+              updateOne: {
+                filter: { _id: slot._id },
+                update: { $set: { price } },
+              },
+            };
+          });
+
+          await Slot.bulkWrite(bulkOps, { ordered: false });
+        }
+      }
+      // ────────────────────────────────────────────────────────────────────
+
       res.status(200).json({ success: true, message: 'Court updated successfully', data: court });
     } catch (error) {
       next(error);

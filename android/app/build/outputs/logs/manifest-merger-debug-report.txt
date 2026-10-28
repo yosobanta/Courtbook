@@ -110,9 +110,9 @@ MERGED from [androidx.versionedparcelable:versionedparcelable:1.1.1] C:\Users\hp
 	android:label
 		ADDED from C:\Users\hp\.gemini\antigravity-ide\scratch\courtbook\android\app\src\main\AndroidManifest.xml:16:9-34
 	android:roundIcon
-		ADDED from C:\Users\hp\.gemini\antigravity-ide\scratch\courtbook\android\app\src\main\AndroidManifest.xml:17:9-61
+		ADDED from C:\Users\hp\.gemini\antigravity-ide\scratch\courtbook\android\app\src\main\AndroidManifest.xml:17:9-54
 	android:icon
-		ADDED from C:\Users\hp\.gemini\antigravity-ide\scratch\courtbook\android\app\src\main\AndroidManifest.xml:15:9-56
+		ADDED from C:\Users\hp\.gemini\antigravity-ide\scratch\courtbook\android\app\src\main\AndroidManifest.xml:15:9-43
 	android:allowBackup
 		ADDED from C:\Users\hp\.gemini\antigravity-ide\scratch\courtbook\android\app\src\main\AndroidManifest.xml:14:9-35
 	android:theme

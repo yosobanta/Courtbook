@@ -18,12 +18,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.courtbook.analytics.engine.BookingPredictionHelper
 import com.courtbook.data.model.SlotDto
 import com.courtbook.ui.theme.*
 
 /**
  * Responsive, compact time-slot card designed for a 2-column grid layout.
- * Displays start-end time, actual price, status badge, and clear selection styling.
+ * Displays start-end time, actual price, status badge, predictive indicator, and clear selection styling.
  */
 @Composable
 fun SlotChip(
@@ -31,7 +32,8 @@ fun SlotChip(
     isSelected: Boolean,
     onSelectToggle: (SlotDto) -> Unit,
     modifier: Modifier = Modifier,
-    isHeldByMe: Boolean = false
+    isHeldByMe: Boolean = false,
+    predictionTag: BookingPredictionHelper.SlotTag? = null
 ) {
   val isClickable = slot.isAvailable || (slot.isHeld && isHeldByMe && !slot.isHoldExpired())
 
@@ -73,7 +75,7 @@ fun SlotChip(
   Surface(
       modifier = modifier
           .fillMaxWidth()
-          .defaultMinSize(minHeight = 88.dp)
+          .defaultMinSize(minHeight = 94.dp)
           .clip(RoundedCornerShape(14.dp))
           .clickable(enabled = isClickable) { onSelectToggle(slot) },
       shape = RoundedCornerShape(14.dp),
@@ -112,7 +114,7 @@ fun SlotChip(
         } else {
           Box(
               modifier = Modifier
-                  .size(9.dp)
+                  .size(8.dp)
                   .clip(CircleShape)
                   .background(
                       when {
@@ -127,9 +129,45 @@ fun SlotChip(
         }
       }
 
-      Spacer(modifier = Modifier.height(10.dp))
+      // Row 2: Predictive Advisory Tag (if available)
+      if (predictionTag != null) {
+        Surface(
+            color = if (isSelected) {
+              Color.White.copy(alpha = 0.18f)
+            } else {
+              when (predictionTag.type) {
+                BookingPredictionHelper.PredictionTagType.POPULAR -> Color(0xFFFEF3C7)
+                BookingPredictionHelper.PredictionTagType.QUIETER -> SoftGreenSurface
+                BookingPredictionHelper.PredictionTagType.BEST_VALUE -> ElectricLime.copy(alpha = 0.35f)
+                BookingPredictionHelper.PredictionTagType.FEW_LEFT -> Color(0xFFFEE2E2)
+                BookingPredictionHelper.PredictionTagType.FILLING_FAST -> Color(0xFFFFEDD5)
+              }
+            },
+            shape = RoundedCornerShape(4.dp)
+        ) {
+          Text(
+              text = predictionTag.label,
+              color = if (isSelected) {
+                ElectricLime
+              } else {
+                when (predictionTag.type) {
+                  BookingPredictionHelper.PredictionTagType.POPULAR -> StatusWarning
+                  BookingPredictionHelper.PredictionTagType.QUIETER -> ForestGreen
+                  BookingPredictionHelper.PredictionTagType.BEST_VALUE -> ForestGreen
+                  BookingPredictionHelper.PredictionTagType.FEW_LEFT -> StatusDestructive
+                  BookingPredictionHelper.PredictionTagType.FILLING_FAST -> Color(0xFFEA580C)
+                }
+              },
+              fontSize = 9.sp,
+              fontWeight = FontWeight.Bold,
+              modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+          )
+        }
+      } else {
+        Spacer(modifier = Modifier.height(4.dp))
+      }
 
-      // Row 2: Price & Status Label
+      // Row 3: Price & Status Label
       Row(
           modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.SpaceBetween,

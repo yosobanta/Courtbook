@@ -124,19 +124,29 @@ export class AnalyticsService {
             $cond: [
               { $gt: [{ $subtract: ['$totalSlots', '$blockedSlots'] }, 0] },
               {
-                $round: [
+                $min: [
+                  100,
                   {
-                    $multiply: [
+                    $max: [
+                      0,
                       {
-                        $divide: [
-                          '$bookedSlots',
-                          { $subtract: ['$totalSlots', '$blockedSlots'] },
+                        $round: [
+                          {
+                            $multiply: [
+                              {
+                                $divide: [
+                                  '$bookedSlots',
+                                  { $subtract: ['$totalSlots', '$blockedSlots'] },
+                                ],
+                              },
+                              100,
+                            ],
+                          },
+                          1,
                         ],
                       },
-                      100,
                     ],
                   },
-                  1,
                 ],
               },
               0,

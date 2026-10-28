@@ -109,30 +109,43 @@ export class VenueController {
         pricing: {
           weekday: courtPrice,
           weekend: courtPrice + 100,
-          peak: courtPrice + 200,
+          peak: courtPrice + 150,
         },
         images: normalizedImages,
         isActive: true,
       });
       await defaultCourt.save();
 
-      // Generate 7 days of bookable slots automatically
+      // Generate 7 days of bookable slots automatically using per-tier pricing
       const now = new Date();
       const slotsToInsert = [];
       for (let day = 0; day < 7; day++) {
         const d = new Date(now);
         d.setDate(d.getDate() + day);
         const dateStr = d.toISOString().split('T')[0];
+        const [y, m, dt] = dateStr.split('-').map(Number);
+        const dayOfWeek = new Date(y, m - 1, dt).getDay();
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
         for (let hour = 6; hour < 23; hour++) {
           const startTime = `${hour.toString().padStart(2, '0')}:00`;
           const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
+          const isPeak = (hour >= 6 && hour < 9) || (hour >= 17 && hour < 21);
+
+          let price = defaultCourt.pricing.weekday;
+          if (isPeak) {
+            price = defaultCourt.pricing.peak;
+          } else if (isWeekend) {
+            price = defaultCourt.pricing.weekend;
+          }
+
           slotsToInsert.push({
             courtId: defaultCourt._id,
             venueId: venue._id,
             date: dateStr,
             startTime,
             endTime,
-            price: courtPrice,
+            price,
             status: 'AVAILABLE',
           });
         }

@@ -8,6 +8,7 @@ import com.courtbook.data.remote.NetworkModule
 import com.courtbook.data.remote.TokenManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.math.max
 
 /**
  * Coordinates synthetic baseline and real booking retrieval.
@@ -38,10 +39,10 @@ class AnalyticsRepository(
 
     /**
      * Fetches real booking summaries asynchronously.
-     * Returns a pair of (List<RealBookingSummary>, totalCount).
+     * Returns Triple(summaries, totalConfirmedCount, totalConfirmedRevenue).
      * Returns empty list gracefully if network fails or user is offline.
      */
-    suspend fun getRealBookingSummaries(): Pair<List<RealBookingSummary>, Int> = withContext(Dispatchers.IO) {
+    suspend fun getRealBookingData(): Triple<List<RealBookingSummary>, Int, Double> = withContext(Dispatchers.IO) {
         try {
             val isAdmin = TokenManager.isAdmin()
             val bookings: List<BookingDto> = if (isAdmin) {
@@ -61,15 +62,24 @@ class AnalyticsRepository(
             }
 
             val confirmedBookings = bookings.filter { it.isConfirmed }
+            val totalRevenue = confirmedBookings.sumOf { it.finalAmount }
             val summaries = aggregateBookings(confirmedBookings)
-            Pair(summaries, confirmedBookings.size)
+            Triple(summaries, confirmedBookings.size, totalRevenue)
         } catch (_: Exception) {
-            Pair(emptyList(), 0)
+            Triple(emptyList(), 0, 0.0)
         }
+    }
+
+    /** Legacy helper for backwards compatibility */
+    suspend fun getRealBookingSummaries(): Pair<List<RealBookingSummary>, Int> {
+        val (summaries, count, _) = getRealBookingData()
+        return Pair(summaries, count)
     }
 
     private fun aggregateBookings(bookings: List<BookingDto>): List<RealBookingSummary> {
         if (bookings.isEmpty()) return emptyList()
+
+        val activeDays = max(1, bookings.map { it.date }.distinct().size)
 
         return bookings.groupBy { booking ->
             val sport = booking.sport.uppercase()
@@ -84,7 +94,8 @@ class AnalyticsRepository(
                 timeSlot = key.second,
                 bookingCount = count,
                 totalRevenue = totalRev,
-                averagePrice = avgPrice
+                averagePrice = avgPrice,
+                activeDays = activeDays
             )
         }
     }

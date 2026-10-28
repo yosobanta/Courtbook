@@ -1,8 +1,12 @@
 package com.courtbook.analytics.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,10 +26,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.courtbook.analytics.model.DataSource
+import com.courtbook.analytics.model.AnalyticsUiState
+import com.courtbook.analytics.model.CurrencyFormatter
+import com.courtbook.analytics.model.ForecastResult
 import com.courtbook.analytics.model.SlotRecommendation
 import com.courtbook.analytics.model.TrendDirection
 import com.courtbook.ui.components.StateLoader
@@ -44,33 +51,30 @@ fun AIInsightsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "CourtBook AI Insights",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                color = TextDeep
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Surface(
-                                color = ElectricLime,
-                                shape = RoundedCornerShape(6.dp)
-                            ) {
-                                Text(
-                                    text = if (uiState.isAdmin) "ADMIN AI" else "PLAYER AI",
-                                    color = ForestGreen,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Text(
-                            text = "Predictive intelligence & demand analytics",
-                            fontSize = 11.sp,
-                            color = TextMuted
+                            text = "AI Insights",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = TextDeep,
+                            maxLines = 1
                         )
+                        Surface(
+                            color = ElectricLime,
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = if (uiState.isAdmin) "ADMIN AI" else "PLAYER AI",
+                                color = ForestGreen,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                maxLines = 1
+                            )
+                        }
                     }
                 },
                 navigationIcon = {
@@ -111,20 +115,21 @@ fun AIInsightsScreen(
                     .padding(paddingValues)
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp)
+                contentPadding = PaddingValues(top = 12.dp, bottom = 32.dp)
             ) {
-                // 1. Data Source Transparency Banner
+                // Screen subtitle
                 item {
-                    DataSourceTransparencyCard(
-                        sourceLabel = forecast.dataSourceLabel,
-                        syntheticWeight = forecast.syntheticWeight,
-                        realWeight = forecast.realWeight,
-                        realBookingCount = uiState.realBookingCount,
-                        simulatedCount = uiState.simulatedBookingsCount
+                    Text(
+                        text = if (uiState.isAdmin)
+                            "Demand forecasting, occupancy analysis & predictive revenue"
+                        else
+                            "Smart court availability, peak hour alerts & quieter times",
+                        fontSize = 12.sp,
+                        color = TextMuted
                     )
                 }
 
-                // 2. Filter Controls (Sport & Forecast Horizon)
+                // Filter Controls (Sport & Forecast Horizon)
                 item {
                     FilterControlsSection(
                         availableSports = uiState.availableSports,
@@ -135,60 +140,65 @@ fun AIInsightsScreen(
                     )
                 }
 
-                // 3. Key Performance Indicators
-                item {
-                    KPIOverviewSection(
-                        totalPredictions = forecast.predictions.sumOf { it.predictedDemand }.toInt(),
-                        peakSport = forecast.peakDemand.busiestSport,
-                        peakSlot = forecast.peakDemand.busiestTimeSlot,
-                        trend = forecast.peakDemand.demandTrend,
-                        projectedRevenue = forecast.revenueProjection.totalProjectedRevenue
-                    )
-                }
-
-                // 4. Demand Trajectory Chart
-                item {
-                    AnalyticsCard(
-                        title = "Demand Forecast Trajectory",
-                        subtitle = "Historical baseline vs ${uiState.forecastHorizon}-day AI projection"
-                    ) {
-                        DemandLineChart(
-                            historicalData = forecast.historicalData,
-                            predictions = forecast.predictions,
-                            modifier = Modifier.padding(vertical = 8.dp)
+                // ── Distinct Views for Admin vs Player ───────────────────
+                if (uiState.isAdmin) {
+                    // Admin View
+                    item {
+                        AdminOverviewKPIs(
+                            forecast = forecast,
+                            horizonDays = uiState.forecastHorizon,
+                            selectedSport = uiState.selectedSport
                         )
                     }
-                }
 
-                // 5. Smart Slot Recommendations (Player-facing & Managerial)
-                item {
-                    AnalyticsCard(
-                        title = "Smart Slot Recommendations",
-                        subtitle = "Optimal time slots scoring high on availability and value"
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            forecast.recommendations.take(4).forEach { rec ->
-                                SlotRecommendationCard(recommendation = rec)
+                    item {
+                        DataSourceTransparencyCard(
+                            sourceLabel = forecast.dataSourceLabel,
+                            syntheticWeight = forecast.syntheticWeight,
+                            realWeight = forecast.realWeight,
+                            realBookingCount = uiState.realBookingCount,
+                            simulatedCount = uiState.simulatedBookingsCount
+                        )
+                    }
+
+                    item {
+                        AnalyticsCard(
+                            title = "Demand Forecast Trajectory",
+                            subtitle = "7-day historical baseline vs ${uiState.forecastHorizon}-day AI projection"
+                        ) {
+                            DemandLineChart(
+                                historicalData = forecast.historicalData,
+                                predictions = forecast.predictions,
+                                modifier = Modifier.padding(vertical = 6.dp)
+                            )
+                        }
+                    }
+
+                    item {
+                        AnalyticsCard(
+                            title = "Smart Slot Recommendations",
+                            subtitle = "Optimal time slots scoring high on availability and value"
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                forecast.recommendations.forEach { rec ->
+                                    SlotRecommendationCard(recommendation = rec)
+                                }
                             }
                         }
                     }
-                }
 
-                // 6. Slot Capacity & Utilization
-                item {
-                    AnalyticsCard(
-                        title = "Hourly Utilization vs Capacity",
-                        subtitle = "Dotted line marks 75% peak pressure threshold"
-                    ) {
-                        SlotUtilizationBarChart(
-                            predictions = forecast.predictions,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
+                    item {
+                        AnalyticsCard(
+                            title = "Hourly Utilization vs Capacity",
+                            subtitle = "Average projected occupancy across available slots"
+                        ) {
+                            SlotUtilizationBarChart(
+                                predictions = forecast.predictions,
+                                modifier = Modifier.padding(vertical = 6.dp)
+                            )
+                        }
                     }
-                }
 
-                // 7. Admin-Only: Heatmap, Revenue Breakdown & Simulation Sandbox
-                if (uiState.isAdmin) {
                     item {
                         AnalyticsCard(
                             title = "Demand Intensity Heatmap",
@@ -196,7 +206,7 @@ fun AIInsightsScreen(
                         ) {
                             DemandHeatmapGrid(
                                 predictions = forecast.predictions,
-                                modifier = Modifier.padding(vertical = 8.dp)
+                                modifier = Modifier.padding(vertical = 6.dp)
                             )
                         }
                     }
@@ -204,21 +214,21 @@ fun AIInsightsScreen(
                     item {
                         AnalyticsCard(
                             title = "Projected Daily Revenue",
-                            subtitle = "Estimated earnings over the ${uiState.forecastHorizon}-day horizon"
+                            subtitle = "Estimated revenue over the ${uiState.forecastHorizon}-day horizon: ${CurrencyFormatter.formatInr(forecast.revenueProjection.totalProjectedRevenue)}"
                         ) {
                             val dailyRev = forecast.revenueProjection.dailyProjections.map {
                                 "Day +${it.dayOffset}" to it.revenue
                             }
                             RevenueBarChart(
                                 dailyRevenue = dailyRev,
-                                modifier = Modifier.padding(vertical = 8.dp)
+                                modifier = Modifier.padding(vertical = 6.dp)
                             )
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
                             Text(
-                                text = "Revenue by Sport",
-                                color = DarkTextSecondary,
-                                fontSize = 12.sp,
+                                text = "Projected Revenue by Sport",
+                                color = TextDeep,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(6.dp))
@@ -229,7 +239,7 @@ fun AIInsightsScreen(
                                 forecast.revenueProjection.bySport.forEach { (sport, amount) ->
                                     Surface(
                                         modifier = Modifier.weight(1f),
-                                        color = DarkSurface,
+                                        color = SoftGreenSurface,
                                         shape = RoundedCornerShape(8.dp)
                                     ) {
                                         Column(
@@ -238,12 +248,14 @@ fun AIInsightsScreen(
                                         ) {
                                             Text(
                                                 text = sport.take(4),
-                                                color = DarkTextSecondary,
-                                                fontSize = 10.sp
+                                                color = TextMuted,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.SemiBold
                                             )
+                                            Spacer(modifier = Modifier.height(2.dp))
                                             Text(
-                                                text = "₹${amount.toInt()}",
-                                                color = CourtGreen,
+                                                text = CurrencyFormatter.formatInr(amount, compact = true),
+                                                color = ForestGreen,
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.Bold
                                             )
@@ -254,53 +266,231 @@ fun AIInsightsScreen(
                         }
                     }
 
+                    // Admin Simulation Sandbox (Collapsed by default)
+                    item {
+                        DataTestingSandboxCard(
+                            simulatedCount = uiState.simulatedBookingsCount,
+                            onSimulate = { viewModel.simulateAdditionalBookings(it) },
+                            onReset = { viewModel.resetSimulation() }
+                        )
+                    }
+                } else {
+                    // Player View
+                    item {
+                        PlayerSummaryCard(
+                            busiestSlot = forecast.peakDemand.busiestTimeSlot,
+                            leastBusySlot = forecast.peakDemand.leastBusyTimeSlot,
+                            busiestSport = forecast.peakDemand.busiestSport
+                        )
+                    }
+
                     item {
                         AnalyticsCard(
-                            title = "Data Growth Simulation Sandbox",
-                            subtitle = "Simulate real booking accumulation to evaluate model blending"
+                            title = "Recommended Slots for You",
+                            subtitle = "Optimal times based on availability, crowd levels, and court pricing"
                         ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(
-                                    text = "Current Simulated Extra Observations: ${uiState.simulatedBookingsCount}",
-                                    color = DarkTextSecondary,
-                                    fontSize = 12.sp
-                                )
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    listOf(10, 25, 50, 100).forEach { count ->
-                                        Button(
-                                            onClick = { viewModel.simulateAdditionalBookings(count) },
-                                            modifier = Modifier.weight(1f),
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = if (uiState.simulatedBookingsCount == count) AccentAmber else DarkSurface
-                                            ),
-                                            shape = RoundedCornerShape(8.dp),
-                                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
-                                        ) {
-                                            Text(
-                                                text = "+$count",
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (uiState.simulatedBookingsCount == count) Color.Black else DarkTextPrimary
-                                            )
-                                        }
-                                    }
-                                }
-
-                                if (uiState.simulatedBookingsCount > 0) {
-                                    OutlinedButton(
-                                        onClick = { viewModel.resetSimulation() },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Text("Reset to Baseline", color = StatusBooked, fontSize = 12.sp)
-                                    }
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                forecast.recommendations.forEach { rec ->
+                                    SlotRecommendationCard(recommendation = rec)
                                 }
                             }
                         }
+                    }
+
+                    item {
+                        AnalyticsCard(
+                            title = "Expected Crowd by Time Slot",
+                            subtitle = "Typical busy and quiet hours across courts"
+                        ) {
+                            SlotUtilizationBarChart(
+                                predictions = forecast.predictions,
+                                modifier = Modifier.padding(vertical = 6.dp)
+                            )
+                        }
+                    }
+
+                    item {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = SoftGreenSurface,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = ForestGreen,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Estimated demand based on simulated data and available booking history.",
+                                    color = TextMuted,
+                                    fontSize = 11.sp,
+                                    lineHeight = 15.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── Admin Overview Section ─────────────────────────────────────────────
+
+@Composable
+private fun AdminOverviewKPIs(
+    forecast: ForecastResult,
+    horizonDays: Int,
+    selectedSport: String
+) {
+    val totalProjectedBookings = forecast.predictions.sumOf { it.predictedDemand }.toInt()
+    val trend = forecast.peakDemand.demandTrend
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            KPICard(
+                modifier = Modifier.weight(1f),
+                label = "Projected Bookings",
+                value = "$totalProjectedBookings",
+                sublabel = "$horizonDays-day forecast${if (selectedSport != "ALL") " · $selectedSport" else ""}",
+                icon = Icons.Default.ConfirmationNumber,
+                tint = ForestGreen
+            )
+
+            KPICard(
+                modifier = Modifier.weight(1f),
+                label = "Projected Revenue",
+                value = CurrencyFormatter.formatInr(forecast.revenueProjection.totalProjectedRevenue, compact = true),
+                sublabel = "$horizonDays-day estimate",
+                icon = Icons.Default.Payments,
+                tint = ForestGreen
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            KPICard(
+                modifier = Modifier.weight(1f),
+                label = "Peak Demand Period",
+                value = forecast.peakDemand.busiestTimeSlot,
+                sublabel = "Highest crowd expected",
+                icon = Icons.Default.AccessTime,
+                tint = StatusWarning
+            )
+
+            KPICard(
+                modifier = Modifier.weight(1f),
+                label = "Demand Trend",
+                value = when (trend) {
+                    TrendDirection.INCREASING -> "Rising"
+                    TrendDirection.DECREASING -> "Falling"
+                    TrendDirection.STABLE -> "Stable"
+                },
+                sublabel = "Trajectory slope",
+                icon = when (trend) {
+                    TrendDirection.INCREASING -> Icons.AutoMirrored.Filled.TrendingUp
+                    TrendDirection.DECREASING -> Icons.AutoMirrored.Filled.TrendingDown
+                    TrendDirection.STABLE -> Icons.AutoMirrored.Filled.TrendingFlat
+                },
+                tint = when (trend) {
+                    TrendDirection.INCREASING -> ForestGreen
+                    TrendDirection.DECREASING -> StatusDestructive
+                    TrendDirection.STABLE -> AccentBlue
+                }
+            )
+        }
+
+        if (forecast.actualRevenue > 0.0 || forecast.actualBookingCount > 0) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = SoftGreenSurface),
+                border = BorderStroke(1.dp, BorderSubtle)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Actual Confirmed Bookings", color = TextMuted, fontSize = 11.sp)
+                        Text(
+                            "${forecast.actualBookingCount} real bookings recorded",
+                            color = TextDeep,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("Actual Collected Revenue", color = TextMuted, fontSize = 11.sp)
+                        Text(
+                            CurrencyFormatter.formatInr(forecast.actualRevenue),
+                            color = ForestGreen,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── Player Overview Card ───────────────────────────────────────────────
+
+@Composable
+private fun PlayerSummaryCard(
+    busiestSlot: String,
+    leastBusySlot: String,
+    busiestSport: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        border = BorderStroke(1.dp, BorderSubtle)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Lightbulb, contentDescription = null, tint = ForestGreen, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Booking Insights Summary", color = TextDeep, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    color = SoftGreenSurface,
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text("Quietest Time", color = ForestGreen, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        Text(leastBusySlot, color = TextDeep, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text("Low crowds", color = TextMuted, fontSize = 10.sp)
+                    }
+                }
+
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    color = Color(0xFFFEF3C7),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text("Peak Hours", color = StatusWarning, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        Text(busiestSlot, color = TextDeep, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text("Book early", color = TextMuted, fontSize = 10.sp)
                     }
                 }
             }
@@ -381,11 +571,11 @@ private fun DataSourceTransparencyCard(
                 }
 
                 Surface(
-                    color = if (realWeight > 0.5) SoftGreenSurface else ElectricLime.copy(alpha = 0.35f),
+                    color = if (realWeight >= 0.6) SoftGreenSurface else ElectricLime.copy(alpha = 0.35f),
                     shape = RoundedCornerShape(6.dp)
                 ) {
                     Text(
-                        text = if (realWeight > 0.5) "REAL DOMINANT" else if (realWeight > 0.0) "BLENDED" else "SYNTHETIC BASELINE",
+                        text = if (realWeight >= 0.6) "REAL DOMINANT" else if (realWeight > 0.0) "BLENDED FORECAST" else "SIMULATION-LED",
                         color = ForestGreen,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
@@ -453,19 +643,20 @@ private fun FilterControlsSection(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Forecast Horizon", color = DarkTextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("Forecast Horizon", color = TextDeep, fontSize = 12.sp, fontWeight = FontWeight.Bold)
 
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(3, 7, 14).forEach { days ->
                     val isSelected = selectedHorizon == days
                     Surface(
                         modifier = Modifier.clickable { onHorizonSelect(days) },
-                        color = if (isSelected) CourtGreen else DarkSurfaceElevated,
+                        color = if (isSelected) ForestGreen else CardSurface,
+                        border = if (isSelected) null else BorderStroke(1.dp, BorderSubtle),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
                             text = "$days Days",
-                            color = if (isSelected) Color.Black else DarkTextSecondary,
+                            color = if (isSelected) ElectricLime else TextDeep,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -484,13 +675,13 @@ private fun FilterControlsSection(
                 val isSelected = selectedSport.equals(sport, ignoreCase = true)
                 Surface(
                     modifier = Modifier.clickable { onSportSelect(sport) },
-                    color = if (isSelected) ChipSelectedBg else ChipUnselectedBg,
+                    color = if (isSelected) ForestGreen else CardSurface,
                     shape = RoundedCornerShape(20.dp),
-                    border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, DarkBorder)
+                    border = if (isSelected) null else BorderStroke(1.dp, BorderSubtle)
                 ) {
                     Text(
                         text = sport.lowercase().replaceFirstChar { it.uppercase() },
-                        color = if (isSelected) Color.White else DarkTextSecondary,
+                        color = if (isSelected) ElectricLime else TextDeep,
                         fontSize = 12.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -502,57 +693,12 @@ private fun FilterControlsSection(
 }
 
 @Composable
-private fun KPIOverviewSection(
-    totalPredictions: Int,
-    peakSport: String,
-    peakSlot: String,
-    trend: TrendDirection,
-    projectedRevenue: Double
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        KPICard(
-            modifier = Modifier.weight(1f),
-            label = "Est. Bookings",
-            value = "$totalPredictions",
-            icon = Icons.Default.ConfirmationNumber,
-            tint = CourtGreen
-        )
-
-        KPICard(
-            modifier = Modifier.weight(1f),
-            label = "Peak Slot",
-            value = peakSlot.split("-").firstOrNull() ?: peakSlot,
-            icon = Icons.Default.AccessTime,
-            tint = AccentAmber
-        )
-
-        KPICard(
-            modifier = Modifier.weight(1f),
-            label = "Demand Trend",
-            value = trend.name.take(4),
-            icon = when (trend) {
-                TrendDirection.INCREASING -> Icons.AutoMirrored.Filled.TrendingUp
-                TrendDirection.DECREASING -> Icons.AutoMirrored.Filled.TrendingDown
-                TrendDirection.STABLE -> Icons.AutoMirrored.Filled.TrendingFlat
-            },
-            tint = when (trend) {
-                TrendDirection.INCREASING -> CourtGreen
-                TrendDirection.DECREASING -> StatusBooked
-                TrendDirection.STABLE -> AccentBlue
-            }
-        )
-    }
-}
-
-@Composable
 private fun KPICard(
     modifier: Modifier = Modifier,
     label: String,
     value: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    sublabel: String,
+    icon: ImageVector,
     tint: Color
 ) {
     Card(
@@ -567,8 +713,9 @@ private fun KPICard(
         ) {
             Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.height(6.dp))
-            Text(text = value, color = TextDeep, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-            Text(text = label, color = TextMuted, fontSize = 10.sp)
+            Text(text = value, color = TextDeep, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(text = label, color = TextDeep, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Text(text = sublabel, color = TextMuted, fontSize = 10.sp, maxLines = 1)
         }
     }
 }
@@ -593,18 +740,32 @@ private fun SlotRecommendationCard(
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = recommendation.timeSlot,
+                        text = "${recommendation.sport.lowercase().replaceFirstChar { it.uppercase() }} · ${recommendation.timeSlot}",
                         color = TextDeep,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Surface(
                         color = SoftGreenSurface,
                         shape = RoundedCornerShape(6.dp)
                     ) {
                         Text(
-                            text = "${(recommendation.score * 100).toInt()}% Match",
+                            text = "${recommendation.score.coerceIn(0.0, 100.0).toInt()}% Match",
+                            color = ForestGreen,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                    Surface(
+                        color = ElectricLime.copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = recommendation.recommendationBadge,
                             color = ForestGreen,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
@@ -612,17 +773,20 @@ private fun SlotRecommendationCard(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = recommendation.explanation,
                     color = TextMuted,
-                    fontSize = 11.sp
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp
                 )
             }
 
+            Spacer(modifier = Modifier.width(10.dp))
+
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "₹${recommendation.estimatedPrice.toInt()}",
+                    text = CurrencyFormatter.formatInr(recommendation.estimatedPrice),
                     color = ForestGreen,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
@@ -632,6 +796,125 @@ private fun SlotRecommendationCard(
                     color = TextMuted,
                     fontSize = 10.sp
                 )
+            }
+        }
+    }
+}
+
+/**
+ * Admin Data Growth Simulation Sandbox (collapsed by default).
+ * Isolated testing sandbox that NEVER creates real bookings in MongoDB.
+ */
+@Composable
+private fun DataTestingSandboxCard(
+    simulatedCount: Int,
+    onSimulate: (Int) -> Unit,
+    onReset: () -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        border = BorderStroke(1.dp, BorderSubtle)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Science,
+                        contentDescription = null,
+                        tint = ForestGreen,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "Data & Model Testing (Sandbox)",
+                            color = TextDeep,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (simulatedCount > 0) "+$simulatedCount simulated observations active" else "Simulate booking data growth (in-memory)",
+                            color = TextMuted,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+
+                Surface(
+                    color = SoftGreenSurface,
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        text = if (isExpanded) "Hide" else "Open",
+                        color = ForestGreen,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column(modifier = Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    HorizontalDivider(color = BorderSubtle)
+
+                    Text(
+                        text = "Simulates additional historical observations to evaluate how forecasts transition from synthetic baseline to real dominance. Runs purely in-memory — never creates real reservations, alters availability, or modifies revenue.",
+                        color = TextMuted,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(10, 25, 50, 100).forEach { count ->
+                            val isSelected = simulatedCount == count
+                            Button(
+                                onClick = { onSimulate(count) },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isSelected) ForestGreen else SoftGreenSurface
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = "+$count",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSelected) ElectricLime else ForestGreen
+                                )
+                            }
+                        }
+                    }
+
+                    if (simulatedCount > 0) {
+                        OutlinedButton(
+                            onClick = onReset,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, StatusDestructive.copy(alpha = 0.5f))
+                        ) {
+                            Text("Reset to Baseline", color = StatusDestructive, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
             }
         }
     }

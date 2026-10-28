@@ -60,7 +60,7 @@ fun AdminDashboardScreen(
   val context = LocalContext.current
 
   var selectedTab by remember { mutableStateOf(0) }
-  val tabTitles = listOf("Overview", "Turfs & Spots", "Bookings", "Slots", "Server")
+  val tabTitles = listOf("Overview", "Turfs & Spots", "Bookings", "Slots")
 
   // Dialog states
   var showAddTurfDialog by remember { mutableStateOf(false) }
@@ -98,7 +98,7 @@ fun AdminDashboardScreen(
                   }
                   Spacer(modifier = Modifier.width(6.dp))
                   Text(
-                      text = if (uiState.activeBaseUrl.contains("render")) "Cloud (Render)" else "Localhost (${uiState.activeBaseUrl.replace("/api/", "")})",
+                      text = "Facility & Operations",
                       fontSize = 11.sp,
                       color = ForestGreen,
                       fontWeight = FontWeight.Medium,
@@ -196,7 +196,8 @@ fun AdminDashboardScreen(
               uiState = uiState,
               onSwitchTab = { selectedTab = it },
               onRefresh = { viewModel.loadAllAdminData() },
-              onLogout = onLogout
+              onLogout = onLogout,
+              onSwitchToPlayerView = onNavigateToPlayerView
           )
           1 -> TurfsAndSpotsTab(
               uiState = uiState,
@@ -213,12 +214,6 @@ fun AdminDashboardScreen(
           3 -> SlotsTab(
               uiState = uiState,
               viewModel = viewModel
-          )
-          4 -> ServerConfigTab(
-              uiState = uiState,
-              onApplyUrl = { newUrl -> viewModel.updateServerUrl(context, newUrl) },
-              onSwitchToPlayerView = onNavigateToPlayerView,
-              onLogout = onLogout
           )
         }
       }
@@ -324,7 +319,8 @@ private fun OverviewTab(
     uiState: AdminUiState,
     onSwitchTab: (Int) -> Unit,
     onRefresh: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onSwitchToPlayerView: () -> Unit
 ) {
   val kpi = uiState.summary?.kpi
 
@@ -422,12 +418,12 @@ private fun OverviewTab(
               onClick = { onSwitchTab(3) }
           )
           QuickActionCard(
-              title = "Server Switcher",
-              subtitle = "Localhost vs Render",
-              icon = Icons.Default.Dns,
-              accent = StatusHeld,
+              title = "Customer View",
+              subtitle = "Preview customer app",
+              icon = Icons.Default.Visibility,
+              accent = ForestGreen,
               modifier = Modifier.weight(1f),
-              onClick = { onSwitchTab(4) }
+              onClick = onSwitchToPlayerView
           )
         }
       }
@@ -1081,167 +1077,7 @@ private fun SlotsTab(
   }
 }
 
-// ------------------------------------------------------------------------------------------------
-// TAB 4: SERVER CONFIG & ENVIRONMENT SWITCHER
-// ------------------------------------------------------------------------------------------------
-@Composable
-private fun ServerConfigTab(
-    uiState: AdminUiState,
-    onApplyUrl: (String) -> Unit,
-    onSwitchToPlayerView: () -> Unit,
-    onLogout: () -> Unit
-) {
-  var customUrlInput by remember { mutableStateOf(uiState.activeBaseUrl) }
 
-  Column(
-      modifier = Modifier
-          .fillMaxSize()
-          .padding(16.dp)
-          .verticalScroll(rememberScrollState()),
-      verticalArrangement = Arrangement.spacedBy(16.dp)
-  ) {
-    Text("Backend Server Environment", style = MaterialTheme.typography.titleMedium, color = DarkTextPrimary, fontWeight = FontWeight.Bold)
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated)
-    ) {
-      Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Active Endpoint:", color = DarkTextSecondary, fontSize = 12.sp)
-        Text(uiState.activeBaseUrl, color = CourtGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-
-        HorizontalDivider(color = DarkBorder)
-
-        Text("Select Preset:", color = DarkTextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-
-        // Preset 1: Render Cloud
-        ServerPresetButton(
-            title = "🌐 Cloud Backend (Render - Recommended for Real Phone)",
-            url = NetworkModule.DEFAULT_RENDER_URL,
-            isSelected = uiState.activeBaseUrl == NetworkModule.DEFAULT_RENDER_URL,
-            onClick = { onApplyUrl(NetworkModule.DEFAULT_RENDER_URL) }
-        )
-
-        // Preset 2: Localhost Device via ADB reverse
-        ServerPresetButton(
-            title = "⚡ Localhost USB Reverse (127.0.0.1 - Real Phone via USB)",
-            url = NetworkModule.LOCALHOST_DEVICE_URL,
-            isSelected = uiState.activeBaseUrl == NetworkModule.LOCALHOST_DEVICE_URL,
-            onClick = { onApplyUrl(NetworkModule.LOCALHOST_DEVICE_URL) }
-        )
-
-        // Preset 3: Localhost Emulator (10.0.2.2:5000)
-        ServerPresetButton(
-            title = "💻 Localhost PC Emulator ONLY (10.0.2.2 - Android Studio)",
-            url = NetworkModule.LOCALHOST_EMULATOR_URL,
-            isSelected = uiState.activeBaseUrl == NetworkModule.LOCALHOST_EMULATOR_URL,
-            onClick = { onApplyUrl(NetworkModule.LOCALHOST_EMULATOR_URL) }
-        )
-
-        HorizontalDivider(color = DarkBorder)
-
-        // Custom URL Input
-        Text("Custom Server IP / Wi-Fi URL:", color = DarkTextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-        OutlinedTextField(
-            value = customUrlInput,
-            onValueChange = { customUrlInput = it },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = CourtGreen,
-                unfocusedBorderColor = DarkBorder,
-                focusedTextColor = DarkTextPrimary,
-                unfocusedTextColor = DarkTextPrimary
-            )
-        )
-
-        Button(
-            onClick = { onApplyUrl(customUrlInput) },
-            modifier = Modifier.fillMaxWidth().height(44.dp),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = CourtGreen)
-        ) {
-          Text("Apply Custom Server URL", color = Color.Black, fontWeight = FontWeight.Bold)
-        }
-      }
-    }
-
-    // Role and Quick Switcher
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated)
-    ) {
-      Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Administrator Account", color = DarkTextPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-        Text("Logged in as ${TokenManager.getUser()?.email ?: "admin@courtbook.com"}", color = DarkTextSecondary, fontSize = 13.sp)
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Button(
-            onClick = onSwitchToPlayerView,
-            modifier = Modifier.fillMaxWidth().height(46.dp),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = AccentAmber)
-        ) {
-          Icon(Icons.Default.Visibility, contentDescription = null, tint = Color.Black)
-          Spacer(modifier = Modifier.width(8.dp))
-          Text("Switch to Customer View", color = Color.Black, fontWeight = FontWeight.Bold)
-        }
-
-        OutlinedButton(
-            onClick = {
-              TokenManager.clear()
-              onLogout()
-            },
-            modifier = Modifier.fillMaxWidth().height(46.dp),
-            shape = RoundedCornerShape(10.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = StatusBooked)
-        ) {
-          Icon(Icons.Default.ExitToApp, contentDescription = null, tint = StatusBooked)
-          Spacer(modifier = Modifier.width(8.dp))
-          Text("Sign Out of Admin Portal", fontWeight = FontWeight.Bold)
-        }
-      }
-    }
-  }
-}
-
-@Composable
-private fun ServerPresetButton(
-    title: String,
-    url: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-  val borderColor = if (isSelected) CourtGreen else DarkBorder
-  val bgColor = if (isSelected) CourtGreen.copy(alpha = 0.12f) else DarkSurface
-
-  Box(
-      modifier = Modifier
-          .fillMaxWidth()
-          .clip(RoundedCornerShape(8.dp))
-          .background(bgColor)
-          .border(1.dp, borderColor, RoundedCornerShape(8.dp))
-          .clickable(onClick = onClick)
-          .padding(12.dp)
-  ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-      Column(modifier = Modifier.weight(1f)) {
-        Text(title, color = if (isSelected) CourtGreen else DarkTextPrimary, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-        Text(url, color = DarkTextSecondary, fontSize = 11.sp)
-      }
-      if (isSelected) {
-        Icon(Icons.Default.CheckCircle, contentDescription = "Active", tint = CourtGreen, modifier = Modifier.size(20.dp))
-      }
-    }
-  }
-}
 
 // ------------------------------------------------------------------------------------------------
 // DIALOGS: ADD TURF, ADD SPOT, EDIT RATES, GENERATE SLOTS

@@ -267,7 +267,6 @@ async function seedDatabase() {
       startHour: 6,
       endHour: 22,
       slotDurationMinutes: 60,
-      price: court.basePrice,
     });
     totalSlots += res.createdOrUpdated;
   }

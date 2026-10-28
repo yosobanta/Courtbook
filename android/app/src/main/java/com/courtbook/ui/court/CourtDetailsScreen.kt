@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.courtbook.analytics.engine.BookingPredictionHelper
 import com.courtbook.data.model.SlotDto
 import com.courtbook.ui.components.*
 import com.courtbook.ui.theme.*
@@ -137,6 +138,30 @@ fun CourtDetailsScreen(
       )
     } else {
       val court = uiState.court!!
+
+      val isWeekend = remember(uiState.selectedDate) {
+        try {
+          val cal = Calendar.getInstance().apply {
+            time = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(uiState.selectedDate) ?: Date()
+          }
+          val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
+          dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY
+        } catch (_: Exception) {
+          false
+        }
+      }
+
+      val selectedSlot = uiState.selectedSlots.firstOrNull()
+      val alternativeSuggestion = remember(selectedSlot, uiState.slots, isWeekend) {
+        if (selectedSlot != null) {
+          BookingPredictionHelper.findQuieterAlternative(
+              selectedSlot = selectedSlot,
+              allSlotsForDate = uiState.slots,
+              courtBasePrice = court.basePrice,
+              isWeekend = isWeekend
+          )
+        } else null
+      }
 
       LazyColumn(
           modifier = Modifier
@@ -273,6 +298,106 @@ fun CourtDetailsScreen(
           }
         }
 
+        // 2b. Rate Schedule (Weekday, Weekend, Peak Hours)
+        item {
+          val weekdayRate = court.pricing?.weekday?.toInt() ?: court.basePrice.toInt()
+          val weekendRate = court.pricing?.weekend?.toInt() ?: (court.basePrice + 100).toInt()
+          val peakRate = court.pricing?.peak?.toInt() ?: (court.basePrice + 150).toInt()
+
+          Card(
+              modifier = Modifier.fillMaxWidth(),
+              shape = RoundedCornerShape(14.dp),
+              colors = CardDefaults.cardColors(containerColor = CardSurface),
+              border = BorderStroke(1.dp, BorderSubtle)
+          ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+              Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
+              ) {
+                Text(
+                    text = "HOURLY RATES",
+                    color = TextMuted,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp
+                )
+                Surface(
+                    color = if (isWeekend) Color(0xFFFEF3C7) else SoftGreenSurface,
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                  Text(
+                      text = if (isWeekend) "Weekend Rates Active" else "Weekday Rates Active",
+                      color = if (isWeekend) Color(0xFFB45309) else ForestGreen,
+                      fontSize = 11.sp,
+                      fontWeight = FontWeight.Bold,
+                      modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                  )
+                }
+              }
+
+              Spacer(modifier = Modifier.height(10.dp))
+
+              Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.spacedBy(8.dp)
+              ) {
+                // Weekday Rate
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    color = if (!isWeekend) SoftGreenSurface else Color(0xFFF9FAFB),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, if (!isWeekend) ForestGreen.copy(alpha = 0.35f) else BorderSubtle)
+                ) {
+                  Column(
+                      modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
+                      horizontalAlignment = Alignment.CenterHorizontally
+                  ) {
+                    Text("Weekday", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text("₹$weekdayRate", color = if (!isWeekend) ForestGreen else TextDeep, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                  }
+                }
+
+                // Weekend Rate
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    color = if (isWeekend) SoftGreenSurface else Color(0xFFF9FAFB),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, if (isWeekend) ForestGreen.copy(alpha = 0.35f) else BorderSubtle)
+                ) {
+                  Column(
+                      modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
+                      horizontalAlignment = Alignment.CenterHorizontally
+                  ) {
+                    Text("Weekend", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text("₹$weekendRate", color = if (isWeekend) ForestGreen else TextDeep, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                  }
+                }
+
+                // Peak Hour Rate
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    color = Color(0xFFFFFBEB),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, Color(0xFFFDE68A))
+                ) {
+                  Column(
+                      modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
+                      horizontalAlignment = Alignment.CenterHorizontally
+                  ) {
+                    Text("Peak (6-9, 5-9)", color = Color(0xFFB45309), fontSize = 10.sp, fontWeight = FontWeight.Medium)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text("₹$peakRate", color = Color(0xFFB45309), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                  }
+                }
+              }
+            }
+          }
+        }
+
         // 3. Error Banner (e.g. 409 Conflict)
         if (uiState.errorMessage != null) {
           item {
@@ -297,6 +422,61 @@ fun CourtDetailsScreen(
         // 5. Slot Status Legend (Directly under calendar)
         item {
           AvailabilityLegend()
+        }
+
+        // Contextual AI Smart Tip Banner (suggests quieter alternative if popular slot selected)
+        if (alternativeSuggestion != null) {
+          item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = SoftGreenSurface),
+                border = BorderStroke(1.dp, ForestGreen.copy(alpha = 0.25f))
+            ) {
+              Row(
+                  modifier = Modifier.padding(12.dp),
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.SpaceBetween
+              ) {
+                Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                  Icon(
+                      imageVector = Icons.Default.Lightbulb,
+                      contentDescription = null,
+                      tint = ForestGreen,
+                      modifier = Modifier.size(20.dp)
+                  )
+                  Spacer(modifier = Modifier.width(10.dp))
+                  Column {
+                    Text(
+                        text = "Smart Tip: ${alternativeSuggestion.tipTitle}",
+                        color = ForestGreen,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = alternativeSuggestion.tipMessage,
+                        color = TextDeep,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                  }
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = {
+                      viewModel.toggleSlotSelection(alternativeSuggestion.busySlot)
+                      viewModel.toggleSlotSelection(alternativeSuggestion.suggestedSlot)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    modifier = Modifier.height(34.dp)
+                ) {
+                  Text("Switch", color = ElectricLime, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+              }
+            }
+          }
         }
 
         // 6. Slots Section Header
@@ -437,7 +617,7 @@ fun CourtDetailsScreen(
           }
         }
 
-        // 7. Responsive 2-Column Slot Grid
+        // 7. Responsive 2-Column Slot Grid with Advisory Contextual Indicators
         when {
           uiState.isLoadingSlots -> {
             item { StateLoader("Loading slots for ${uiState.selectedDate}...") }
@@ -457,22 +637,30 @@ fun CourtDetailsScreen(
                   modifier = Modifier.fillMaxWidth(),
                   horizontalArrangement = Arrangement.spacedBy(10.dp)
               ) {
+                val tag0 = remember(pair[0], uiState.slots, isWeekend) {
+                  BookingPredictionHelper.evaluateSlotTag(pair[0], uiState.slots, court.basePrice, isWeekend)
+                }
                 Box(modifier = Modifier.weight(1f)) {
                   SlotChip(
                       slot = pair[0],
                       isSelected = uiState.selectedSlots.any { it.id == pair[0].id },
                       onSelectToggle = { viewModel.toggleSlotSelection(it) },
-                      isHeldByMe = pair[0].isHeldByMe(uiState.currentUserId)
+                      isHeldByMe = pair[0].isHeldByMe(uiState.currentUserId),
+                      predictionTag = tag0
                   )
                 }
 
                 if (pair.size > 1) {
+                  val tag1 = remember(pair[1], uiState.slots, isWeekend) {
+                    BookingPredictionHelper.evaluateSlotTag(pair[1], uiState.slots, court.basePrice, isWeekend)
+                  }
                   Box(modifier = Modifier.weight(1f)) {
                     SlotChip(
                         slot = pair[1],
                         isSelected = uiState.selectedSlots.any { it.id == pair[1].id },
                         onSelectToggle = { viewModel.toggleSlotSelection(it) },
-                        isHeldByMe = pair[1].isHeldByMe(uiState.currentUserId)
+                        isHeldByMe = pair[1].isHeldByMe(uiState.currentUserId),
+                        predictionTag = tag1
                     )
                   }
                 } else {
