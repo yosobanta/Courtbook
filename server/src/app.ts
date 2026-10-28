@@ -4,6 +4,7 @@ import { ENV } from './config/env';
 import { connectDatabase } from './config/database';
 import apiRouter from './routes';
 import { errorHandler } from './middleware/errorHandler';
+import { SlotService } from './services/slotService';
 
 const app = express();
 
@@ -37,8 +38,16 @@ app.use(errorHandler);
 
 // Connect to MongoDB and start HTTP server
 
+
 async function startServer() {
   await connectDatabase();
+
+  // Periodic background cleanup: release expired holds across courts every 30 seconds
+  setInterval(() => {
+    SlotService.releaseExpiredHolds().catch((err) => {
+      console.error('[SlotHoldCleanup] Error releasing expired holds:', err);
+    });
+  }, 30000);
 
   const PORT = Number(process.env.PORT || ENV.PORT);
 

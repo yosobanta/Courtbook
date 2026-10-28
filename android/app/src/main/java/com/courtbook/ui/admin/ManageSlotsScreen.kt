@@ -1,5 +1,6 @@
 package com.courtbook.ui.admin
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -37,28 +38,38 @@ fun ManageSlotsScreen(
   Scaffold(
       topBar = {
         TopAppBar(
-            title = { Text("Slot Management") },
+            title = {
+              Text(
+                  text = "Slot Management",
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 18.sp,
+                  color = TextDeep
+              )
+            },
             navigationIcon = {
               IconButton(onClick = onNavigateBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = DarkTextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextDeep)
               }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBg, titleContentColor = DarkTextPrimary)
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = CardSurface,
+                titleContentColor = TextDeep
+            )
         )
       },
-      containerColor = DarkBg
+      containerColor = WarmBg
   ) { paddingValues ->
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 20.dp)
     ) {
-      Spacer(modifier = Modifier.height(12.dp))
+      Spacer(modifier = Modifier.height(16.dp))
 
       // Court Selector Horizontal Strip
-      Text("Select Court", color = DarkTextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-      Spacer(modifier = Modifier.height(8.dp))
+      Text("Select Court", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+      Spacer(modifier = Modifier.height(10.dp))
 
       Row(
           modifier = Modifier
@@ -76,23 +87,24 @@ fun ManageSlotsScreen(
         }
       }
 
-      Spacer(modifier = Modifier.height(16.dp))
+      Spacer(modifier = Modifier.height(20.dp))
 
       Text(
           text = "Slots for ${uiState.selectedDate}",
-          style = MaterialTheme.typography.titleMedium,
-          color = DarkTextPrimary,
-          fontWeight = FontWeight.Bold
+          color = TextDeep,
+          fontSize = 17.sp,
+          fontWeight = FontWeight.Bold,
+          letterSpacing = (-0.3).sp
       )
 
-      Spacer(modifier = Modifier.height(10.dp))
+      Spacer(modifier = Modifier.height(12.dp))
 
       if (uiState.slots.isEmpty()) {
         StateLoader("Loading slots for selected court...")
       } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 32.dp)
         ) {
           items(uiState.slots) { slot ->
@@ -116,25 +128,29 @@ private fun AdminSlotRow(
 ) {
   Card(
       modifier = Modifier.fillMaxWidth(),
-      shape = RoundedCornerShape(10.dp),
-      colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated)
+      shape = RoundedCornerShape(14.dp),
+      colors = CardDefaults.cardColors(containerColor = CardSurface),
+      border = BorderStroke(1.dp, BorderSubtle),
+      elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
   ) {
     Row(
-        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
       Column {
-        Text(slot.timeRange, color = DarkTextPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Text(slot.timeRange, color = TextDeep, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = "Status: ${slot.status} ${if (slot.isBlocked) "(${slot.blockReason ?: "Maintenance"})" else ""}",
             color = when {
-              slot.isAvailable -> StatusAvailable
-              slot.isBlocked -> StatusBlocked
-              slot.isBooked -> StatusBooked
-              else -> StatusHeld
+              slot.isAvailable -> StatusSuccess
+              slot.isBlocked -> StatusUnavailable
+              slot.isBooked -> StatusDestructive
+              else -> StatusWarning
             },
-            fontSize = 12.sp
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
         )
       }
 
@@ -142,25 +158,36 @@ private fun AdminSlotRow(
         slot.isAvailable -> {
           Button(
               onClick = onBlockClick,
-              colors = ButtonDefaults.buttonColors(containerColor = StatusBlocked),
-              shape = RoundedCornerShape(8.dp),
-              contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+              colors = ButtonDefaults.buttonColors(containerColor = SoftGreenSurface),
+              shape = RoundedCornerShape(10.dp),
+              contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
           ) {
-            Text("Block Slot", fontSize = 12.sp, color = Color.White)
+            Text("Block Slot", fontSize = 12.sp, color = TextDeep, fontWeight = FontWeight.SemiBold)
           }
         }
         slot.isBlocked -> {
           Button(
               onClick = onUnblockClick,
-              colors = ButtonDefaults.buttonColors(containerColor = CourtGreen),
-              shape = RoundedCornerShape(8.dp),
-              contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+              colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
+              shape = RoundedCornerShape(10.dp),
+              contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
           ) {
-            Text("Unblock", fontSize = 12.sp, color = Color.Black, fontWeight = FontWeight.Bold)
+            Text("Unblock", fontSize = 12.sp, color = ElectricLime, fontWeight = FontWeight.Bold)
           }
         }
         slot.isBooked -> {
-          Text("Booked", color = StatusBooked, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+          Surface(
+              color = Color(0xFFFEF2F2),
+              shape = RoundedCornerShape(6.dp)
+          ) {
+            Text(
+                text = "Booked",
+                color = StatusDestructive,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+          }
         }
       }
     }

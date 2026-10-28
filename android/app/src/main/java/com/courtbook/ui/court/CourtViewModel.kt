@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.courtbook.data.model.CourtDto
 import com.courtbook.data.model.SlotDto
+import com.courtbook.data.remote.TokenManager
 import com.courtbook.data.repository.CourtRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,15 +19,21 @@ data class CourtDetailsUiState(
     val isLoadingCourt: Boolean = true,
     val isLoadingSlots: Boolean = true,
     val isHoldingSlots: Boolean = false,
+    val isReleasingHold: Boolean = false,
     val court: CourtDto? = null,
     val selectedDate: String = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()),
     val slots: List<SlotDto> = emptyList(),
     val selectedSlots: List<SlotDto> = emptyList(),
+    val currentUserId: String? = null,
+    val remainingHoldSeconds: Long = 0L,
     val errorMessage: String? = null,
     val isConflictError: Boolean = false
 ) {
   val totalPrice: Double get() = selectedSlots.sumOf { it.price }
-  val canProceed: Boolean get() = selectedSlots.isNotEmpty() && !isHoldingSlots
+  val canProceed: Boolean get() = selectedSlots.isNotEmpty() && !isHoldingSlots && !isReleasingHold
+
+  val myHeldSlots: List<SlotDto>
+    get() = slots.filter { it.isHeldByMe(currentUserId) && !it.isHoldExpired() }
 }
 
 class CourtViewModel(private val repository: CourtRepository = CourtRepository()) : ViewModel() {
@@ -32,9 +41,13 @@ class CourtViewModel(private val repository: CourtRepository = CourtRepository()
   private val _uiState = MutableStateFlow(CourtDetailsUiState())
   val uiState: StateFlow<CourtDetailsUiState> = _uiState.asStateFlow()
 
+  private var holdTimerJob: Job? = null
+
   fun initCourt(courtId: String) {
+    val currentUserId = TokenManager.getUser()?.id
     _uiState.value = _uiState.value.copy(
         isLoadingCourt = true,
+        currentUserId = currentUserId,
         selectedSlots = emptyList(),
         errorMessage = null
     )
@@ -68,12 +81,34 @@ class CourtViewModel(private val repository: CourtRepository = CourtRepository()
   }
 
   fun loadSlotsForCurrentDate(courtId: String) {
-    _uiState.value = _uiState.value.copy(isLoadingSlots = true, errorMessage = null)
+    val currentUserId = _uiState.value.currentUserId ?: TokenManager.getUser()?.id
+    _uiState.value = _uiState.value.copy(
+        isLoadingSlots = true,
+        currentUserId = currentUserId,
+        errorMessage = null
+    )
     viewModelScope.launch {
       val result = repository.getCourtSlots(courtId, _uiState.value.selectedDate)
       result.fold(
           onSuccess = { slots ->
-            _uiState.value = _uiState.value.copy(isLoadingSlots = false, slots = slots)
+            // Check if any slots are held by this user
+            val myHeld = slots.filter { it.isHeldByMe(currentUserId) && !it.isHoldExpired() }
+            val currentSelected = _uiState.value.selectedSlots.filter { sel ->
+              slots.any { it.id == sel.id && (it.isAvailable || (it.isHeldByMe(currentUserId) && !it.isHoldExpired())) }
+            }.toMutableList()
+
+            // If user has held slots and nothing is selected, pre-select user's held slots so they can resume booking
+            if (currentSelected.isEmpty() && myHeld.isNotEmpty()) {
+              currentSelected.addAll(myHeld)
+            }
+
+            _uiState.value = _uiState.value.copy(
+                isLoadingSlots = false,
+                slots = slots,
+                selectedSlots = currentSelected
+            )
+
+            startHoldTimer(courtId)
           },
           onFailure = { error ->
             _uiState.value = _uiState.value.copy(
@@ -82,6 +117,29 @@ class CourtViewModel(private val repository: CourtRepository = CourtRepository()
             )
           }
       )
+    }
+  }
+
+  private fun startHoldTimer(courtId: String) {
+    holdTimerJob?.cancel()
+    val myHeld = _uiState.value.myHeldSlots
+    if (myHeld.isEmpty()) {
+      _uiState.value = _uiState.value.copy(remainingHoldSeconds = 0L)
+      return
+    }
+
+    holdTimerJob = viewModelScope.launch {
+      while (true) {
+        val remaining = _uiState.value.myHeldSlots.map { it.getRemainingHoldSeconds() }.minOrNull() ?: 0L
+        _uiState.value = _uiState.value.copy(remainingHoldSeconds = remaining)
+
+        if (remaining <= 0) {
+          // Hold expired! Auto-refresh slots to release them in UI and backend
+          loadSlotsForCurrentDate(courtId)
+          break
+        }
+        delay(1000)
+      }
     }
   }
 
@@ -96,6 +154,33 @@ class CourtViewModel(private val repository: CourtRepository = CourtRepository()
     }
 
     _uiState.value = _uiState.value.copy(selectedSlots = current)
+  }
+
+  fun releaseHold(slotIds: List<String>? = null) {
+    val court = _uiState.value.court ?: return
+    val targetSlotIds = slotIds ?: _uiState.value.myHeldSlots.map { it.id }
+    if (targetSlotIds.isEmpty()) return
+
+    _uiState.value = _uiState.value.copy(isReleasingHold = true, errorMessage = null)
+
+    viewModelScope.launch {
+      val result = repository.releaseHold(targetSlotIds)
+      result.fold(
+          onSuccess = {
+            _uiState.value = _uiState.value.copy(
+                isReleasingHold = false,
+                selectedSlots = emptyList()
+            )
+            loadSlotsForCurrentDate(court.id)
+          },
+          onFailure = { error ->
+            _uiState.value = _uiState.value.copy(
+                isReleasingHold = false,
+                errorMessage = error.message ?: "Failed to release held slot"
+            )
+          }
+      )
+    }
   }
 
   fun proceedToHold(onSuccess: (courtId: String, slotIds: List<String>) -> Unit) {
@@ -130,5 +215,10 @@ class CourtViewModel(private val repository: CourtRepository = CourtRepository()
           }
       )
     }
+  }
+
+  override fun onCleared() {
+    super.onCleared()
+    holdTimerJob?.cancel()
   }
 }

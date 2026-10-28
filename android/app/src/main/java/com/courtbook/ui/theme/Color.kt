@@ -2,30 +2,48 @@ package com.courtbook.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Primary Emerald / Turf Green
-val CourtGreen = Color(0xFF10B981)
-val CourtGreenDark = Color(0xFF047857)
-val CourtGreenLight = Color(0xFFD1FAE5)
+// --- TARGET PALETTE TOKENS ---
+val WarmBg = Color(0xFFF7F8F2)
+val CardSurface = Color(0xFFFFFFFF)
+val ElectricLime = Color(0xFFD8FF55)
+val ForestGreen = Color(0xFF193B27)
+val ForestGreenDark = Color(0xFF0F2418)
+val SoftGreenSurface = Color(0xFFEAF1E6)
+val TextDeep = Color(0xFF202B22)
+val TextMuted = Color(0xFF68746A)
+val BorderSubtle = Color(0xFFE5E9DE)
+
+val StatusSuccess = Color(0xFF15803D)
+val StatusWarning = Color(0xFFD97706)
+val StatusDestructive = Color(0xFFDC2626)
+val StatusUnavailable = Color(0xFF9CA3AF)
+val StatusBookedBg = Color(0xFFFEE2E2)
+
+// --- BRAND & COMPATIBILITY ALIASES ---
+// Primary Accent & Brand
+val CourtGreen = ForestGreen
+val CourtGreenDark = ForestGreenDark
+val CourtGreenLight = ElectricLime
 
 // Secondary Electric Accent
-val AccentAmber = Color(0xFFF59E0B)
-val AccentOrange = Color(0xFFFF6B4A)
-val AccentBlue = Color(0xFF3B82F6)
+val AccentAmber = StatusWarning
+val AccentOrange = Color(0xFFEA580C)
+val AccentBlue = Color(0xFF2563EB)
 
-// Dark Surfaces
-val DarkBg = Color(0xFF0B0F19)
-val DarkSurface = Color(0xFF131B2E)
-val DarkSurfaceElevated = Color(0xFF1E293B)
-val DarkTextPrimary = Color(0xFFF8FAFC)
-val DarkTextSecondary = Color(0xFF94A3B8)
-val DarkBorder = Color(0xFF334155)
+// Surfaces (Mapped to fresh warm off-white & white cards)
+val DarkBg = WarmBg
+val DarkSurface = CardSurface
+val DarkSurfaceElevated = CardSurface
+val DarkTextPrimary = TextDeep
+val DarkTextSecondary = TextMuted
+val DarkBorder = BorderSubtle
 
 // Status Colors
-val StatusAvailable = Color(0xFF10B981)
-val StatusHeld = Color(0xFFF59E0B)
-val StatusBooked = Color(0xFFEF4444)
-val StatusBlocked = Color(0xFF64748B)
+val StatusAvailable = StatusSuccess
+val StatusHeld = StatusWarning
+val StatusBooked = StatusDestructive
+val StatusBlocked = StatusUnavailable
 
-// Badges
-val ChipSelectedBg = Color(0xFF059669)
-val ChipUnselectedBg = Color(0xFF1E293B)
+// Badges & Chips
+val ChipSelectedBg = ForestGreen
+val ChipUnselectedBg = SoftGreenSurface

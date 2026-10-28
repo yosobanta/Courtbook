@@ -145,4 +145,11 @@ class BookingViewModel(
       )
     }
   }
+
+  fun cancelAndReleaseHold(slotIds: List<String>, onReleased: () -> Unit) {
+    viewModelScope.launch {
+      courtRepository.releaseHold(slotIds)
+      onReleased()
+    }
+  }
 }

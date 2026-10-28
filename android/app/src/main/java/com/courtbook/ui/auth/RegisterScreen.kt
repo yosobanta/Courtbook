@@ -47,7 +47,7 @@ fun RegisterScreen(
   Box(
       modifier = Modifier
           .fillMaxSize()
-          .background(DarkBg)
+          .background(WarmBg)
           .padding(24.dp)
   ) {
     Column(
@@ -59,17 +59,19 @@ fun RegisterScreen(
     ) {
       Text(
           text = "Create Account",
-          color = DarkTextPrimary,
+          color = TextDeep,
           fontSize = 28.sp,
-          fontWeight = FontWeight.Bold
+          fontWeight = FontWeight.Bold,
+          letterSpacing = (-0.5).sp
       )
+      Spacer(modifier = Modifier.height(4.dp))
       Text(
           text = "Join thousands of players discovering courts",
-          color = DarkTextSecondary,
-          fontSize = 13.sp
+          color = TextMuted,
+          fontSize = 14.sp
       )
 
-      Spacer(modifier = Modifier.height(24.dp))
+      Spacer(modifier = Modifier.height(28.dp))
 
       val errorMessage = localError ?: (authState as? AuthState.Error)?.message
       if (errorMessage != null) {
@@ -80,88 +82,108 @@ fun RegisterScreen(
           value = name,
           onValueChange = { name = it; localError = null },
           label = { Text("Full Name") },
-          leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = DarkTextSecondary) },
+          leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = TextMuted) },
           modifier = Modifier.fillMaxWidth(),
-          shape = RoundedCornerShape(12.dp),
+          shape = RoundedCornerShape(14.dp),
           colors = OutlinedTextFieldDefaults.colors(
-              focusedBorderColor = CourtGreen,
-              unfocusedBorderColor = DarkBorder,
-              focusedTextColor = DarkTextPrimary,
-              unfocusedTextColor = DarkTextPrimary
+              focusedContainerColor = CardSurface,
+              unfocusedContainerColor = CardSurface,
+              focusedBorderColor = ForestGreen,
+              unfocusedBorderColor = BorderSubtle,
+              focusedTextColor = TextDeep,
+              unfocusedTextColor = TextDeep,
+              focusedLabelColor = ForestGreen,
+              unfocusedLabelColor = TextMuted
           ),
           singleLine = true
       )
 
-      Spacer(modifier = Modifier.height(12.dp))
+      Spacer(modifier = Modifier.height(14.dp))
 
       OutlinedTextField(
           value = email,
           onValueChange = { email = it; localError = null },
           label = { Text("Email Address") },
-          leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = DarkTextSecondary) },
+          leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = TextMuted) },
           modifier = Modifier.fillMaxWidth(),
-          shape = RoundedCornerShape(12.dp),
+          shape = RoundedCornerShape(14.dp),
           colors = OutlinedTextFieldDefaults.colors(
-              focusedBorderColor = CourtGreen,
-              unfocusedBorderColor = DarkBorder,
-              focusedTextColor = DarkTextPrimary,
-              unfocusedTextColor = DarkTextPrimary
+              focusedContainerColor = CardSurface,
+              unfocusedContainerColor = CardSurface,
+              focusedBorderColor = ForestGreen,
+              unfocusedBorderColor = BorderSubtle,
+              focusedTextColor = TextDeep,
+              unfocusedTextColor = TextDeep,
+              focusedLabelColor = ForestGreen,
+              unfocusedLabelColor = TextMuted
           ),
           singleLine = true
       )
 
-      Spacer(modifier = Modifier.height(12.dp))
+      Spacer(modifier = Modifier.height(14.dp))
 
       OutlinedTextField(
           value = phone,
           onValueChange = { phone = it; localError = null },
           label = { Text("Phone Number") },
-          leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = DarkTextSecondary) },
+          leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = TextMuted) },
           modifier = Modifier.fillMaxWidth(),
-          shape = RoundedCornerShape(12.dp),
+          shape = RoundedCornerShape(14.dp),
           colors = OutlinedTextFieldDefaults.colors(
-              focusedBorderColor = CourtGreen,
-              unfocusedBorderColor = DarkBorder,
-              focusedTextColor = DarkTextPrimary,
-              unfocusedTextColor = DarkTextPrimary
+              focusedContainerColor = CardSurface,
+              unfocusedContainerColor = CardSurface,
+              focusedBorderColor = ForestGreen,
+              unfocusedBorderColor = BorderSubtle,
+              focusedTextColor = TextDeep,
+              unfocusedTextColor = TextDeep,
+              focusedLabelColor = ForestGreen,
+              unfocusedLabelColor = TextMuted
           ),
           singleLine = true
       )
 
-      Spacer(modifier = Modifier.height(12.dp))
+      Spacer(modifier = Modifier.height(14.dp))
 
       OutlinedTextField(
           value = password,
           onValueChange = { password = it; localError = null },
           label = { Text("Password") },
-          leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = DarkTextSecondary) },
+          leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = TextMuted) },
           visualTransformation = PasswordVisualTransformation(),
           modifier = Modifier.fillMaxWidth(),
-          shape = RoundedCornerShape(12.dp),
+          shape = RoundedCornerShape(14.dp),
           colors = OutlinedTextFieldDefaults.colors(
-              focusedBorderColor = CourtGreen,
-              unfocusedBorderColor = DarkBorder,
-              focusedTextColor = DarkTextPrimary,
-              unfocusedTextColor = DarkTextPrimary
+              focusedContainerColor = CardSurface,
+              unfocusedContainerColor = CardSurface,
+              focusedBorderColor = ForestGreen,
+              unfocusedBorderColor = BorderSubtle,
+              focusedTextColor = TextDeep,
+              unfocusedTextColor = TextDeep,
+              focusedLabelColor = ForestGreen,
+              unfocusedLabelColor = TextMuted
           ),
           singleLine = true
       )
 
-      Spacer(modifier = Modifier.height(12.dp))
+      Spacer(modifier = Modifier.height(14.dp))
 
       OutlinedTextField(
           value = confirmPassword,
           onValueChange = { confirmPassword = it; localError = null },
           label = { Text("Confirm Password") },
-          leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = DarkTextSecondary) },
+          leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = TextMuted) },
           visualTransformation = PasswordVisualTransformation(),
           modifier = Modifier.fillMaxWidth(),
-          shape = RoundedCornerShape(12.dp),
+          shape = RoundedCornerShape(14.dp),
           colors = OutlinedTextFieldDefaults.colors(
-              focusedBorderColor = CourtGreen,
-              unfocusedBorderColor = DarkBorder,
-              focusedTextColor = DarkTextPrimary,
-              unfocusedTextColor = DarkTextPrimary
+              focusedContainerColor = CardSurface,
+              unfocusedContainerColor = CardSurface,
+              focusedBorderColor = ForestGreen,
+              unfocusedBorderColor = BorderSubtle,
+              focusedTextColor = TextDeep,
+              unfocusedTextColor = TextDeep,
+              focusedLabelColor = ForestGreen,
+              unfocusedLabelColor = TextMuted
           ),
           singleLine = true
       )
@@ -170,31 +192,40 @@ fun RegisterScreen(
 
       Button(
           onClick = {
+            if (name.isBlank() || email.isBlank() || password.isBlank()) {
+              localError = "Please fill in all required fields"
+              return@Button
+            }
             if (password != confirmPassword) {
               localError = "Passwords do not match"
-            } else {
-              viewModel.register(name, email, phone, password)
+              return@Button
             }
+            viewModel.register(name, email, password, phone)
           },
           enabled = authState !is AuthState.Loading,
-          modifier = Modifier.fillMaxWidth().height(52.dp),
-          shape = RoundedCornerShape(12.dp),
-          colors = ButtonDefaults.buttonColors(containerColor = CourtGreen)
+          modifier = Modifier
+              .fillMaxWidth()
+              .height(52.dp),
+          shape = RoundedCornerShape(14.dp),
+          colors = ButtonDefaults.buttonColors(
+              containerColor = ForestGreen,
+              disabledContainerColor = ForestGreen.copy(alpha = 0.6f)
+          )
       ) {
         if (authState is AuthState.Loading) {
-          CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+          CircularProgressIndicator(color = ElectricLime, modifier = Modifier.size(24.dp), strokeWidth = 2.5.dp)
         } else {
-          Text("Create Account", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+          Text("Create Account", color = ElectricLime, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
       }
 
       Spacer(modifier = Modifier.height(24.dp))
 
       Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("Already have an account?", color = DarkTextSecondary, fontSize = 14.sp)
+        Text("Already have an account?", color = TextMuted, fontSize = 14.sp)
         Spacer(modifier = Modifier.width(6.dp))
         TextButton(onClick = onNavigateToLogin) {
-          Text("Sign In", color = CourtGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+          Text("Sign In", color = ForestGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
         }
       }
     }

@@ -10,4 +10,6 @@ router.get('/', courtController_1.CourtController.getCourts);
 router.get('/:id', courtController_1.CourtController.getCourtById);
 router.get('/:id/slots', slotController_1.SlotController.getCourtSlots);
 router.post('/', auth_1.authenticate, (0, auth_1.authorize)('ADMIN'), courtController_1.CourtController.createCourt);
+router.patch('/:id', auth_1.authenticate, (0, auth_1.authorize)('ADMIN'), courtController_1.CourtController.updateCourt);
+router.put('/:id', auth_1.authenticate, (0, auth_1.authorize)('ADMIN'), courtController_1.CourtController.updateCourt);
 exports.default = router;

@@ -28,6 +28,7 @@ sealed class Screen(val route: String) {
   object AdminDashboard : Screen("admin_dashboard")
   object ManageSlots : Screen("manage_slots")
   object Analytics : Screen("analytics")
+  object AIInsights : Screen("ai_insights")
 }
 
 sealed class BottomTab(val route: String, val title: String, val iconName: String) {

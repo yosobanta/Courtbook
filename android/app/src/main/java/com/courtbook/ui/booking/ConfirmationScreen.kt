@@ -1,5 +1,6 @@
 package com.courtbook.ui.booking
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -27,7 +28,7 @@ fun ConfirmationScreen(
   Box(
       modifier = Modifier
           .fillMaxSize()
-          .background(DarkBg)
+          .background(WarmBg)
           .padding(24.dp)
   ) {
     Column(
@@ -35,29 +36,38 @@ fun ConfirmationScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-      // Big Green Animated/Vibrant Check Circle
+      // Big Green Vibrant Check Circle with Soft Halo
       Box(
           modifier = Modifier
-              .size(88.dp)
+              .size(96.dp)
               .clip(CircleShape)
-              .background(CourtGreen),
+              .background(SoftGreenSurface),
           contentAlignment = Alignment.Center
       ) {
-        Icon(
-            imageVector = Icons.Default.Check,
-            contentDescription = "Success",
-            tint = Color.Black,
-            modifier = Modifier.size(48.dp)
-        )
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .clip(CircleShape)
+                .background(ForestGreen),
+            contentAlignment = Alignment.Center
+        ) {
+          Icon(
+              imageVector = Icons.Default.Check,
+              contentDescription = "Success",
+              tint = ElectricLime,
+              modifier = Modifier.size(42.dp)
+          )
+        }
       }
 
       Spacer(modifier = Modifier.height(24.dp))
 
       Text(
           text = "Booking Confirmed! 🎉",
-          color = DarkTextPrimary,
-          fontSize = 26.sp,
+          color = TextDeep,
+          fontSize = 28.sp,
           fontWeight = FontWeight.Bold,
+          letterSpacing = (-0.5).sp,
           textAlign = TextAlign.Center
       )
 
@@ -65,34 +75,48 @@ fun ConfirmationScreen(
 
       Text(
           text = "Your court reservation has been committed to MongoDB Atlas with snapshot transaction isolation.",
-          color = DarkTextSecondary,
+          color = TextMuted,
           fontSize = 14.sp,
+          lineHeight = 20.sp,
           textAlign = TextAlign.Center
       )
 
-      Spacer(modifier = Modifier.height(28.dp))
+      Spacer(modifier = Modifier.height(32.dp))
 
       // Reference Card
       Card(
           modifier = Modifier.fillMaxWidth(),
-          shape = RoundedCornerShape(14.dp),
-          colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated)
+          shape = RoundedCornerShape(18.dp),
+          colors = CardDefaults.cardColors(containerColor = CardSurface),
+          border = BorderStroke(1.dp, BorderSubtle),
+          elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
       ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-          Text("Booking Reference", color = DarkTextSecondary, fontSize = 12.sp)
+          Text("Booking Reference", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
           Spacer(modifier = Modifier.height(6.dp))
           Text(
               text = bookingNumber,
-              color = CourtGreen,
-              fontSize = 20.sp,
+              color = ForestGreen,
+              fontSize = 22.sp,
               fontWeight = FontWeight.Bold,
               letterSpacing = 1.sp
           )
-          Spacer(modifier = Modifier.height(6.dp))
-          Text("Status: CONFIRMED • PAID", color = StatusAvailable, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+          Spacer(modifier = Modifier.height(8.dp))
+          Surface(
+              color = SoftGreenSurface,
+              shape = RoundedCornerShape(6.dp)
+          ) {
+            Text(
+                text = "STATUS: CONFIRMED • PAID",
+                color = StatusSuccess,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+            )
+          }
         }
       }
 
@@ -101,21 +125,27 @@ fun ConfirmationScreen(
       // Action Buttons
       Button(
           onClick = onNavigateToMyBookings,
-          modifier = Modifier.fillMaxWidth().height(50.dp),
-          shape = RoundedCornerShape(12.dp),
-          colors = ButtonDefaults.buttonColors(containerColor = CourtGreen)
+          modifier = Modifier
+              .fillMaxWidth()
+              .height(52.dp),
+          shape = RoundedCornerShape(14.dp),
+          colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
       ) {
-        Text("View My Bookings", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        Text("View My Bookings", color = ElectricLime, fontWeight = FontWeight.Bold, fontSize = 15.sp)
       }
 
-      Spacer(modifier = Modifier.height(12.dp))
+      Spacer(modifier = Modifier.height(14.dp))
 
       OutlinedButton(
           onClick = onNavigateToHome,
-          modifier = Modifier.fillMaxWidth().height(50.dp),
-          shape = RoundedCornerShape(12.dp)
+          modifier = Modifier
+              .fillMaxWidth()
+              .height(52.dp),
+          shape = RoundedCornerShape(14.dp),
+          colors = ButtonDefaults.outlinedButtonColors(containerColor = CardSurface),
+          border = BorderStroke(1.dp, BorderSubtle)
       ) {
-        Text("Back to Home", color = DarkTextPrimary, fontSize = 15.sp)
+        Text("Back to Home", color = TextDeep, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
       }
     }
   }

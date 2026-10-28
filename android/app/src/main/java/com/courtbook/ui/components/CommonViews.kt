@@ -1,11 +1,14 @@
 package com.courtbook.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.SportsTennis
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -24,13 +27,30 @@ fun StateLoader(message: String = "Loading...", modifier: Modifier = Modifier) {
   Box(
       modifier = modifier
           .fillMaxWidth()
-          .padding(32.dp),
+          .padding(36.dp),
       contentAlignment = Alignment.Center
   ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      CircularProgressIndicator(color = CourtGreen, strokeWidth = 3.dp)
+      Box(
+          modifier = Modifier
+              .size(56.dp)
+              .clip(CircleShape)
+              .background(SoftGreenSurface),
+          contentAlignment = Alignment.Center
+      ) {
+        CircularProgressIndicator(
+            color = ForestGreen,
+            strokeWidth = 3.5.dp,
+            modifier = Modifier.size(32.dp)
+        )
+      }
       Spacer(modifier = Modifier.height(16.dp))
-      Text(text = message, color = DarkTextSecondary, fontSize = 14.sp)
+      Text(
+          text = message,
+          color = TextDeep,
+          fontSize = 14.sp,
+          fontWeight = FontWeight.SemiBold
+      )
     }
   }
 }
@@ -42,44 +62,60 @@ fun ErrorBanner(
     isConflict: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-  val bgColor = if (isConflict) StatusHeld.copy(alpha = 0.15f) else StatusBooked.copy(alpha = 0.15f)
-  val iconColor = if (isConflict) StatusHeld else StatusBooked
+  val bgColor = if (isConflict) Color(0xFFFFFBEB) else Color(0xFFFEF2F2)
+  val borderColor = if (isConflict) Color(0xFFFDE68A) else Color(0xFFFECACA)
+  val iconColor = if (isConflict) StatusWarning else StatusDestructive
 
   Card(
       modifier = modifier.fillMaxWidth(),
-      shape = RoundedCornerShape(12.dp),
-      colors = CardDefaults.cardColors(containerColor = bgColor)
+      shape = RoundedCornerShape(14.dp),
+      colors = CardDefaults.cardColors(containerColor = bgColor),
+      border = BorderStroke(1.dp, borderColor)
   ) {
     Row(
         modifier = Modifier.padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-      Icon(
-          imageVector = if (isConflict) Icons.Default.Warning else Icons.Default.Info,
-          contentDescription = "Alert",
-          tint = iconColor,
-          modifier = Modifier.size(24.dp)
-      )
-      Spacer(modifier = Modifier.width(12.dp))
+      Box(
+          modifier = Modifier
+              .size(40.dp)
+              .clip(CircleShape)
+              .background(if (isConflict) Color(0xFFFEF3C7) else Color(0xFFFEE2E2)),
+          contentAlignment = Alignment.Center
+      ) {
+        Icon(
+            imageVector = if (isConflict) Icons.Default.Warning else Icons.Default.Info,
+            contentDescription = "Alert",
+            tint = iconColor,
+            modifier = Modifier.size(20.dp)
+        )
+      }
+      Spacer(modifier = Modifier.width(14.dp))
       Column(modifier = Modifier.weight(1f)) {
         if (isConflict) {
           Text(
               text = "Slot Unavailable",
-              color = StatusHeld,
+              color = StatusWarning,
               fontWeight = FontWeight.Bold,
               fontSize = 14.sp
           )
         }
         Text(
             text = errorMessage,
-            color = DarkTextPrimary,
-            fontSize = 13.sp
+            color = TextDeep,
+            fontSize = 13.sp,
+            lineHeight = 18.sp
         )
       }
       if (onRetry != null) {
         Spacer(modifier = Modifier.width(8.dp))
-        TextButton(onClick = onRetry) {
-          Text("Refresh", color = CourtGreen, fontWeight = FontWeight.Bold)
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
+            shape = RoundedCornerShape(10.dp),
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+        ) {
+          Text("Retry", color = ElectricLime, fontWeight = FontWeight.Bold, fontSize = 12.sp)
         }
       }
     }
@@ -98,15 +134,28 @@ fun EmptyStateView(
           .padding(32.dp),
       contentAlignment = Alignment.Center
   ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      Text(
-          text = "🏟️",
-          fontSize = 48.sp
-      )
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(16.dp)
+    ) {
+      Box(
+          modifier = Modifier
+              .size(72.dp)
+              .clip(CircleShape)
+              .background(SoftGreenSurface),
+          contentAlignment = Alignment.Center
+      ) {
+        Icon(
+            imageVector = Icons.Default.SportsTennis,
+            contentDescription = null,
+            tint = ForestGreen,
+            modifier = Modifier.size(36.dp)
+        )
+      }
       Spacer(modifier = Modifier.height(16.dp))
       Text(
           text = title,
-          color = DarkTextPrimary,
+          color = TextDeep,
           fontSize = 18.sp,
           fontWeight = FontWeight.Bold,
           textAlign = TextAlign.Center
@@ -114,8 +163,9 @@ fun EmptyStateView(
       Spacer(modifier = Modifier.height(6.dp))
       Text(
           text = description,
-          color = DarkTextSecondary,
+          color = TextMuted,
           fontSize = 13.sp,
+          lineHeight = 18.sp,
           textAlign = TextAlign.Center
       )
     }
@@ -129,22 +179,27 @@ fun SportCategoryChip(
     onSelect: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-  val bg = if (isSelected) CourtGreen else DarkSurfaceElevated
-  val textColor = if (isSelected) Color.Black else DarkTextSecondary
+  val bg = if (isSelected) ForestGreen else CardSurface
+  val textColor = if (isSelected) ElectricLime else TextDeep
+  val border = if (isSelected) null else BorderStroke(1.dp, BorderSubtle)
 
-  Box(
+  Surface(
       modifier = modifier
-          .clip(RoundedCornerShape(20.dp))
-          .background(bg)
-          .clickable(onClick = onSelect)
-          .padding(horizontal = 16.dp, vertical = 8.dp)
+          .clip(RoundedCornerShape(24.dp))
+          .clickable(onClick = onSelect),
+      shape = RoundedCornerShape(24.dp),
+      color = bg,
+      border = border,
+      shadowElevation = if (isSelected) 2.dp else 0.dp
   ) {
-    Text(
-        text = sport,
-        color = textColor,
-        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-        fontSize = 13.sp
-    )
+    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+      Text(
+          text = sport,
+          color = textColor,
+          fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+          fontSize = 13.sp
+      )
+    }
   }
 }
 
@@ -162,17 +217,21 @@ fun SectionHeader(
   ) {
     Text(
         text = title,
-        style = MaterialTheme.typography.titleLarge,
-        color = DarkTextPrimary,
-        fontWeight = FontWeight.Bold
+        color = TextDeep,
+        fontSize = 18.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = (-0.3).sp
     )
     if (actionText != null && onActionClick != null) {
       Text(
           text = actionText,
-          color = CourtGreen,
+          color = ForestGreen,
           fontSize = 13.sp,
-          fontWeight = FontWeight.SemiBold,
-          modifier = Modifier.clickable(onClick = onActionClick)
+          fontWeight = FontWeight.Bold,
+          modifier = Modifier
+              .clip(RoundedCornerShape(6.dp))
+              .clickable(onClick = onActionClick)
+              .padding(4.dp)
       )
     }
   }

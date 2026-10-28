@@ -14,6 +14,13 @@ class AuthInterceptor : Interceptor {
     }
     requestBuilder.addHeader("Accept", "application/json")
 
-    return chain.proceed(requestBuilder.build())
+    val response = chain.proceed(requestBuilder.build())
+
+    // If server returns 401 and we had a token, it has expired → auto-logout
+    if (response.code == 401 && !token.isNullOrEmpty()) {
+      TokenManager.clear()
+    }
+
+    return response
   }
 }

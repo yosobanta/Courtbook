@@ -34,3 +34,13 @@ data class RatingDto(
     @SerializedName("average") val average: Double = 4.5,
     @SerializedName("count") val count: Int = 0
 )
+
+data class CreateVenueRequest(
+    @SerializedName("name") val name: String,
+    @SerializedName("description") val description: String = "",
+    @SerializedName("address") val address: String,
+    @SerializedName("city") val city: String,
+    @SerializedName("amenities") val amenities: List<String> = listOf("PARKING", "DRINKING_WATER", "RESTROOM"),
+    @SerializedName("images") val images: List<String> = emptyList(),
+    @SerializedName("operatingHours") val operatingHours: OperatingHoursDto = OperatingHoursDto("06:00", "23:00")
+)

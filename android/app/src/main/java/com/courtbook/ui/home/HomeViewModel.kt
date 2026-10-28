@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.courtbook.data.model.CourtDto
 import com.courtbook.data.model.OfferDto
 import com.courtbook.data.model.UserDto
+import com.courtbook.data.model.VenueDto
 import com.courtbook.data.repository.BookingRepository
 import com.courtbook.data.repository.CourtRepository
 import com.courtbook.data.remote.TokenManager
@@ -17,6 +18,7 @@ data class HomeUiState(
     val isLoading: Boolean = true,
     val user: UserDto? = null,
     val selectedSport: String = "ALL",
+    val venues: List<VenueDto> = emptyList(),
     val courts: List<CourtDto> = emptyList(),
     val offers: List<OfferDto> = emptyList(),
     val errorMessage: String? = null
@@ -40,14 +42,21 @@ class HomeViewModel(
     _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null, user = TokenManager.getUser())
 
     viewModelScope.launch {
+      val venuesResult = courtRepository.getVenues()
       val courtsResult = courtRepository.getCourts(
           sport = if (_uiState.value.selectedSport == "ALL") null else _uiState.value.selectedSport
       )
       val offersResult = bookingRepository.getActiveOffers()
 
+      var currentVenues: List<VenueDto> = emptyList()
       var currentCourts: List<CourtDto> = emptyList()
       var currentOffers: List<OfferDto> = emptyList()
       var error: String? = null
+
+      venuesResult.fold(
+          onSuccess = { currentVenues = it },
+          onFailure = { /* non-fatal */ }
+      )
 
       courtsResult.fold(
           onSuccess = { currentCourts = it },
@@ -61,6 +70,7 @@ class HomeViewModel(
 
       _uiState.value = _uiState.value.copy(
           isLoading = false,
+          venues = currentVenues,
           courts = currentCourts,
           offers = currentOffers,
           errorMessage = error

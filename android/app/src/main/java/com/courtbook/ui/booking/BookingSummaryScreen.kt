@@ -1,5 +1,6 @@
 package com.courtbook.ui.booking
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -41,33 +42,44 @@ fun BookingSummaryScreen(
   Scaffold(
       topBar = {
         TopAppBar(
-            title = { Text("Booking Summary") },
+            title = {
+              Text(
+                  text = "Booking Summary",
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 18.sp,
+                  color = TextDeep
+              )
+            },
             navigationIcon = {
               IconButton(onClick = onNavigateBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = DarkTextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextDeep)
               }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBg, titleContentColor = DarkTextPrimary)
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = CardSurface,
+                titleContentColor = TextDeep
+            )
         )
       },
       bottomBar = {
         Surface(
-            color = DarkSurfaceElevated,
+            color = CardSurface,
             tonalElevation = 8.dp,
+            border = BorderStroke(1.dp, BorderSubtle),
             modifier = Modifier.fillMaxWidth()
         ) {
           Row(
               modifier = Modifier
                   .fillMaxWidth()
-                  .padding(20.dp),
+                  .padding(horizontal = 20.dp, vertical = 14.dp),
               horizontalArrangement = Arrangement.SpaceBetween,
               verticalAlignment = Alignment.CenterVertically
           ) {
             Column {
-              Text("Total Amount", color = DarkTextSecondary, fontSize = 12.sp)
+              Text("Total Amount", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
               Text(
                   text = "₹${uiState.finalAmount.toInt()}",
-                  color = CourtGreen,
+                  color = ForestGreen,
                   fontSize = 22.sp,
                   fontWeight = FontWeight.Bold
               )
@@ -75,16 +87,16 @@ fun BookingSummaryScreen(
 
             Button(
                 onClick = onProceedToPayment,
-                colors = ButtonDefaults.buttonColors(containerColor = CourtGreen),
+                colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.height(48.dp)
             ) {
-              Text("Proceed to Pay", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+              Text("Proceed to Pay", color = ElectricLime, fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
           }
         }
       },
-      containerColor = DarkBg
+      containerColor = WarmBg
   ) { paddingValues ->
     if (uiState.isLoadingData) {
       StateLoader("Preparing booking summary...", modifier = Modifier.padding(paddingValues))
@@ -93,7 +105,7 @@ fun BookingSummaryScreen(
           modifier = Modifier
               .fillMaxSize()
               .padding(paddingValues)
-              .padding(16.dp)
+              .padding(horizontal = 20.dp, vertical = 16.dp)
               .verticalScroll(rememberScrollState()),
           verticalArrangement = Arrangement.spacedBy(16.dp)
       ) {
@@ -101,28 +113,30 @@ fun BookingSummaryScreen(
         val court = uiState.court
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = CardSurface),
+            border = BorderStroke(1.dp, BorderSubtle),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
-          Column(modifier = Modifier.padding(16.dp)) {
+          Column(modifier = Modifier.padding(18.dp)) {
             Text(
                 text = court?.name ?: "Sports Court",
-                color = DarkTextPrimary,
+                color = TextDeep,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "${court?.sport ?: "SPORTS"} • ${if (court?.isIndoor == true) "Indoor" else "Outdoor"}",
-                color = CourtGreen,
+                text = "${court?.sport ?: "SPORTS"} • ${if (court?.isIndoor == true) "Indoor Court" else "Outdoor Court"}",
+                color = ForestGreen,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = court?.venueAddress ?: "Bengaluru",
-                color = DarkTextSecondary,
-                fontSize = 12.sp
+                text = court?.venueAddress ?: "Bengaluru Arena",
+                color = TextMuted,
+                fontSize = 13.sp
             )
           }
         }
@@ -130,33 +144,39 @@ fun BookingSummaryScreen(
         // 2. Selected Slots Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = CardSurface),
+            border = BorderStroke(1.dp, BorderSubtle),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
-          Column(modifier = Modifier.padding(16.dp)) {
+          Column(modifier = Modifier.padding(18.dp)) {
             Text(
                 text = "Selected Slots (${slotIds.size})",
-                color = DarkTextPrimary,
-                fontSize = 15.sp,
+                color = TextDeep,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             slotIds.forEachIndexed { index, slotId ->
               val slot = uiState.slots.find { it.id == slotId }
               Row(
-                  modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                  horizontalArrangement = Arrangement.SpaceBetween
+                  modifier = Modifier
+                      .fillMaxWidth()
+                      .padding(vertical = 4.dp),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
               ) {
                 Text(
                     text = slot?.timeRange ?: "Slot ${index + 1}",
-                    color = DarkTextPrimary,
-                    fontSize = 14.sp
+                    color = TextDeep,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
                 )
                 Text(
                     text = "₹${(slot?.price ?: court?.basePrice ?: 400.0).toInt()}",
-                    color = DarkTextSecondary,
+                    color = ForestGreen,
                     fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold
                 )
               }
             }
@@ -166,14 +186,16 @@ fun BookingSummaryScreen(
         // 3. Coupon Application Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = CardSurface),
+            border = BorderStroke(1.dp, BorderSubtle),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
-          Column(modifier = Modifier.padding(16.dp)) {
+          Column(modifier = Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-              Icon(Icons.Default.LocalOffer, contentDescription = null, tint = AccentAmber, modifier = Modifier.size(18.dp))
+              Icon(Icons.Default.LocalOffer, contentDescription = null, tint = StatusWarning, modifier = Modifier.size(18.dp))
               Spacer(modifier = Modifier.width(8.dp))
-              Text("Have a promo code?", color = DarkTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+              Text("Have a promo code?", color = TextDeep, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -183,23 +205,23 @@ fun BookingSummaryScreen(
               Row(
                   modifier = Modifier
                       .fillMaxWidth()
-                      .background(CourtGreen.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
-                      .padding(horizontal = 12.dp, vertical = 10.dp),
+                      .background(SoftGreenSurface, RoundedCornerShape(10.dp))
+                      .padding(horizontal = 14.dp, vertical = 10.dp),
                   horizontalArrangement = Arrangement.SpaceBetween,
                   verticalAlignment = Alignment.CenterVertically
               ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                  Icon(Icons.Default.Check, contentDescription = null, tint = CourtGreen, modifier = Modifier.size(16.dp))
+                  Icon(Icons.Default.Check, contentDescription = null, tint = ForestGreen, modifier = Modifier.size(16.dp))
                   Spacer(modifier = Modifier.width(6.dp))
                   Text(
                       text = "${uiState.appliedCoupon} applied (Saved ₹${uiState.discountAmount.toInt()})",
-                      color = CourtGreen,
+                      color = ForestGreen,
                       fontWeight = FontWeight.Bold,
                       fontSize = 13.sp
                   )
                 }
                 IconButton(onClick = { viewModel.removeCoupon() }, modifier = Modifier.size(24.dp)) {
-                  Icon(Icons.Default.Close, contentDescription = "Remove", tint = DarkTextSecondary, modifier = Modifier.size(16.dp))
+                  Icon(Icons.Default.Close, contentDescription = "Remove", tint = TextMuted, modifier = Modifier.size(16.dp))
                 }
               }
             } else {
@@ -211,14 +233,16 @@ fun BookingSummaryScreen(
                 OutlinedTextField(
                     value = couponInput,
                     onValueChange = { couponInput = it },
-                    placeholder = { Text("Enter coupon (e.g. WELCOME50)", fontSize = 13.sp) },
+                    placeholder = { Text("Enter coupon (e.g. WELCOME50)", fontSize = 13.sp, color = TextMuted) },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = CourtGreen,
-                        unfocusedBorderColor = DarkBorder,
-                        focusedTextColor = DarkTextPrimary,
-                        unfocusedTextColor = DarkTextPrimary
+                        focusedContainerColor = CardSurface,
+                        unfocusedContainerColor = CardSurface,
+                        focusedBorderColor = ForestGreen,
+                        unfocusedBorderColor = BorderSubtle,
+                        focusedTextColor = TextDeep,
+                        unfocusedTextColor = TextDeep
                     ),
                     singleLine = true
                 )
@@ -226,24 +250,27 @@ fun BookingSummaryScreen(
                 Button(
                     onClick = { viewModel.applyCoupon(couponInput) },
                     enabled = !uiState.isApplyingCoupon && couponInput.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(containerColor = CourtGreen),
-                    shape = RoundedCornerShape(10.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
                 ) {
-                  Text("Apply", color = Color.Black, fontWeight = FontWeight.Bold)
+                  Text("Apply", color = ElectricLime, fontWeight = FontWeight.Bold)
                 }
               }
 
               // Suggested coupon quick chip
-              Spacer(modifier = Modifier.height(8.dp))
+              Spacer(modifier = Modifier.height(10.dp))
               SuggestionChip(
                   onClick = { couponInput = "WELCOME50"; viewModel.applyCoupon("WELCOME50") },
-                  label = { Text("Use WELCOME50 for 50% Off", fontSize = 11.sp, color = AccentAmber) }
+                  label = { Text("Use WELCOME50 for 50% Off", fontSize = 11.sp, color = ForestGreen, fontWeight = FontWeight.SemiBold) },
+                  colors = SuggestionChipDefaults.suggestionChipColors(containerColor = SoftGreenSurface),
+                  border = BorderStroke(1.dp, BorderSubtle)
               )
             }
 
             if (uiState.couponError != null) {
               Spacer(modifier = Modifier.height(8.dp))
-              Text(text = uiState.couponError!!, color = StatusBooked, fontSize = 12.sp)
+              Text(text = uiState.couponError!!, color = StatusDestructive, fontSize = 12.sp)
             }
           }
         }
@@ -251,30 +278,32 @@ fun BookingSummaryScreen(
         // 4. Price Breakdown Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = CardSurface),
+            border = BorderStroke(1.dp, BorderSubtle),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
-          Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Payment Breakdown", color = DarkTextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-            HorizontalDivider(color = DarkBorder)
+          Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Payment Breakdown", color = TextDeep, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            HorizontalDivider(color = BorderSubtle)
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-              Text("Court Fee", color = DarkTextSecondary, fontSize = 14.sp)
-              Text("₹${uiState.originalAmount.toInt()}", color = DarkTextPrimary, fontSize = 14.sp)
+              Text("Court Fee", color = TextMuted, fontSize = 14.sp)
+              Text("₹${uiState.originalAmount.toInt()}", color = TextDeep, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
             }
 
             if (uiState.discountAmount > 0) {
               Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Coupon Discount", color = CourtGreen, fontSize = 14.sp)
-                Text("-₹${uiState.discountAmount.toInt()}", color = CourtGreen, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("Coupon Discount", color = ForestGreen, fontSize = 14.sp)
+                Text("-₹${uiState.discountAmount.toInt()}", color = ForestGreen, fontSize = 14.sp, fontWeight = FontWeight.Bold)
               }
             }
 
-            HorizontalDivider(color = DarkBorder)
+            HorizontalDivider(color = BorderSubtle)
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-              Text("Total Amount", color = DarkTextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-              Text("₹${uiState.finalAmount.toInt()}", color = CourtGreen, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+              Text("Total Amount", color = TextDeep, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+              Text("₹${uiState.finalAmount.toInt()}", color = ForestGreen, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
           }
         }

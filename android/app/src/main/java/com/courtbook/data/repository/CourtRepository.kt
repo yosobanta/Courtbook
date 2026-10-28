@@ -3,6 +3,7 @@ package com.courtbook.data.repository
 import com.courtbook.data.model.CourtDto
 import com.courtbook.data.model.HoldSlotsRequest
 import com.courtbook.data.model.HoldSlotsResponse
+import com.courtbook.data.model.ReleaseSlotsRequest
 import com.courtbook.data.model.SlotDto
 import com.courtbook.data.model.VenueDto
 import com.courtbook.data.remote.CourtBookApi
@@ -83,6 +84,20 @@ class CourtRepository(private val api: CourtBookApi = NetworkModule.api) {
         }
       }
 
+  suspend fun releaseHold(slotIds: List<String> = emptyList()): Result<Boolean> =
+      withContext(Dispatchers.IO) {
+        try {
+          val response = api.releaseHold(ReleaseSlotsRequest(slotIds))
+          if (response.isSuccessful) {
+            Result.success(true)
+          } else {
+            Result.failure(Exception(response.errorBody()?.string() ?: "Failed to release held slots"))
+          }
+        } catch (e: Exception) {
+          Result.failure(e)
+        }
+      }
+
   suspend fun getNearbyCourts(
       lng: Double = 77.5946,
       lat: Double = 12.9716
@@ -95,6 +110,20 @@ class CourtRepository(private val api: CourtBookApi = NetworkModule.api) {
           } else {
             Result.failure(
                 Exception(response.errorBody()?.string() ?: "Failed to fetch nearby venues"))
+          }
+        } catch (e: Exception) {
+          Result.failure(e)
+        }
+      }
+
+  suspend fun getVenues(city: String? = null, search: String? = null): Result<List<VenueDto>> =
+      withContext(Dispatchers.IO) {
+        try {
+          val response = api.getVenues(city = city, search = search)
+          if (response.isSuccessful && response.body() != null) {
+            Result.success(response.body()!!.data)
+          } else {
+            Result.failure(Exception(response.errorBody()?.string() ?: "Failed to load venues"))
           }
         } catch (e: Exception) {
           Result.failure(e)

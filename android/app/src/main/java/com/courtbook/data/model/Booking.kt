@@ -8,7 +8,7 @@ data class BookingDto(
     @SerializedName("userId") val userId: Any? = null,
     @SerializedName("courtId") val court: Any? = null,
     @SerializedName("venueId") val venue: Any? = null,
-    @SerializedName("slotIds") val slots: List<SlotDto> = emptyList(),
+    @SerializedName("slotIds") val slotIds: Any? = null,
     @SerializedName("date") val date: String,
     @SerializedName("startTime") val startTime: String,
     @SerializedName("endTime") val endTime: String,
@@ -46,6 +46,30 @@ data class BookingDto(
 
     val isConfirmed: Boolean get() = status.equals("CONFIRMED", ignoreCase = true)
     val isCancelled: Boolean get() = status.equals("CANCELLED", ignoreCase = true)
+
+    val userName: String
+        get() {
+            if (userId is Map<*, *>) {
+                return (userId["name"] as? String) ?: "Customer"
+            }
+            return "Customer"
+        }
+
+    val userEmail: String
+        get() {
+            if (userId is Map<*, *>) {
+                return (userId["email"] as? String) ?: ""
+            }
+            return ""
+        }
+
+    val userPhone: String
+        get() {
+            if (userId is Map<*, *>) {
+                return (userId["phone"] as? String) ?: ""
+            }
+            return ""
+        }
 }
 
 data class CreateBookingRequest(

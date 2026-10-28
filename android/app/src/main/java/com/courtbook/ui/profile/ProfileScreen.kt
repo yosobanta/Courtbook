@@ -1,11 +1,13 @@
 package com.courtbook.ui.profile
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -23,7 +25,8 @@ import com.courtbook.ui.theme.*
 @Composable
 fun ProfileScreen(
     onLogout: () -> Unit,
-    onNavigateToAdmin: () -> Unit
+    onNavigateToAdmin: () -> Unit,
+    onNavigateToAIInsights: () -> Unit = {}
 ) {
   val user = TokenManager.getUser()
   val isAdmin = TokenManager.isAdmin()
@@ -31,8 +34,8 @@ fun ProfileScreen(
   Column(
       modifier = Modifier
           .fillMaxSize()
-          .background(DarkBg)
-          .padding(20.dp),
+          .background(WarmBg)
+          .padding(24.dp),
       horizontalAlignment = Alignment.CenterHorizontally
   ) {
     Spacer(modifier = Modifier.height(24.dp))
@@ -40,16 +43,16 @@ fun ProfileScreen(
     // Profile Avatar
     Box(
         modifier = Modifier
-            .size(80.dp)
+            .size(88.dp)
             .clip(CircleShape)
-            .background(CourtGreen.copy(alpha = 0.2f)),
+            .background(SoftGreenSurface),
         contentAlignment = Alignment.Center
     ) {
       Icon(
           imageVector = Icons.Default.Person,
           contentDescription = null,
-          tint = CourtGreen,
-          modifier = Modifier.size(44.dp)
+          tint = ForestGreen,
+          modifier = Modifier.size(48.dp)
       )
     }
 
@@ -57,14 +60,15 @@ fun ProfileScreen(
 
     Text(
         text = user?.name ?: "Sports Player",
-        color = DarkTextPrimary,
-        fontSize = 22.sp,
-        fontWeight = FontWeight.Bold
+        color = TextDeep,
+        fontSize = 24.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = (-0.4).sp
     )
 
     Text(
         text = user?.email ?: "player@example.com",
-        color = DarkTextSecondary,
+        color = TextMuted,
         fontSize = 14.sp
     )
 
@@ -72,12 +76,12 @@ fun ProfileScreen(
 
     // Role badge
     Surface(
-        color = if (isAdmin) AccentAmber.copy(alpha = 0.2f) else CourtGreen.copy(alpha = 0.2f),
+        color = if (isAdmin) ElectricLime else SoftGreenSurface,
         shape = RoundedCornerShape(8.dp)
     ) {
       Text(
           text = if (isAdmin) "ADMINISTRATOR" else "PLAYER",
-          color = if (isAdmin) AccentAmber else CourtGreen,
+          color = ForestGreen,
           fontSize = 11.sp,
           fontWeight = FontWeight.Bold,
           modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
@@ -89,31 +93,52 @@ fun ProfileScreen(
     // Info Card
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CardSurface),
+        border = BorderStroke(1.dp, BorderSubtle),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-      Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+      Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         ProfileInfoRow(label = "Phone", value = user?.phone ?: "+91 98765 43210")
-        HorizontalDivider(color = DarkBorder)
+        HorizontalDivider(color = BorderSubtle)
         ProfileInfoRow(label = "Member Since", value = "September 2026")
-        HorizontalDivider(color = DarkBorder)
+        HorizontalDivider(color = BorderSubtle)
         ProfileInfoRow(label = "Account Status", value = "Active")
       }
     }
 
-    Spacer(modifier = Modifier.height(20.dp))
+    Spacer(modifier = Modifier.height(24.dp))
+
+    // AI Insights Button
+    Button(
+        onClick = onNavigateToAIInsights,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
+    ) {
+      Icon(Icons.Default.AutoGraph, contentDescription = null, tint = ElectricLime)
+      Spacer(modifier = Modifier.width(8.dp))
+      Text("CourtBook AI Insights", color = ElectricLime, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
 
     // Admin Control Shortcut
     if (isAdmin) {
-      Button(
+      OutlinedButton(
           onClick = onNavigateToAdmin,
-          modifier = Modifier.fillMaxWidth().height(48.dp),
-          shape = RoundedCornerShape(12.dp),
-          colors = ButtonDefaults.buttonColors(containerColor = AccentAmber)
+          modifier = Modifier
+              .fillMaxWidth()
+              .height(50.dp),
+          shape = RoundedCornerShape(14.dp),
+          colors = ButtonDefaults.outlinedButtonColors(containerColor = CardSurface),
+          border = BorderStroke(1.dp, BorderSubtle)
       ) {
-        Icon(Icons.Default.AdminPanelSettings, contentDescription = null, tint = Color.Black)
+        Icon(Icons.Default.AdminPanelSettings, contentDescription = null, tint = StatusWarning)
         Spacer(modifier = Modifier.width(8.dp))
-        Text("Open Admin Dashboard", color = Color.Black, fontWeight = FontWeight.Bold)
+        Text("Switch to Admin Portal", color = TextDeep, fontWeight = FontWeight.Bold, fontSize = 14.sp)
       }
 
       Spacer(modifier = Modifier.height(12.dp))
@@ -125,13 +150,16 @@ fun ProfileScreen(
           TokenManager.clear()
           onLogout()
         },
-        modifier = Modifier.fillMaxWidth().height(48.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = StatusBooked)
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.outlinedButtonColors(containerColor = CardSurface),
+        border = BorderStroke(1.dp, Color(0xFFFECACA))
     ) {
-      Icon(Icons.Default.ExitToApp, contentDescription = null, tint = StatusBooked)
+      Icon(Icons.Default.ExitToApp, contentDescription = null, tint = StatusDestructive)
       Spacer(modifier = Modifier.width(8.dp))
-      Text("Sign Out", fontWeight = FontWeight.SemiBold)
+      Text("Sign Out", color = StatusDestructive, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
     }
   }
 }
@@ -142,7 +170,7 @@ private fun ProfileInfoRow(label: String, value: String) {
       modifier = Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    Text(label, color = DarkTextSecondary, fontSize = 13.sp)
-    Text(value, color = DarkTextPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+    Text(label, color = TextMuted, fontSize = 13.sp)
+    Text(value, color = TextDeep, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
   }
 }

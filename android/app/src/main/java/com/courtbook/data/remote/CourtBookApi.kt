@@ -1,6 +1,30 @@
 package com.courtbook.data.remote
 
-import com.courtbook.data.model.*
+import com.courtbook.data.model.ApiListResponse
+import com.courtbook.data.model.ApiResponse
+import com.courtbook.data.model.AuthResponseData
+import com.courtbook.data.model.BlockSlotsRequest
+import com.courtbook.data.model.BookingDto
+import com.courtbook.data.model.CourtDto
+import com.courtbook.data.model.CreateBookingRequest
+import com.courtbook.data.model.CreateCourtRequest
+import com.courtbook.data.model.CreateVenueRequest
+import com.courtbook.data.model.DashboardSummaryDto
+import com.courtbook.data.model.GenerateSlotsRequest
+import com.courtbook.data.model.HoldSlotsRequest
+import com.courtbook.data.model.HoldSlotsResponse
+import com.courtbook.data.model.ReleaseSlotsRequest
+import com.courtbook.data.model.LoginRequest
+import com.courtbook.data.model.OfferDto
+import com.courtbook.data.model.PopularSportDto
+import com.courtbook.data.model.RegisterRequest
+import com.courtbook.data.model.RevenueByVenueDto
+import com.courtbook.data.model.SlotDto
+import com.courtbook.data.model.UpdateCourtRequest
+import com.courtbook.data.model.UserDto
+import com.courtbook.data.model.ValidateOfferRequest
+import com.courtbook.data.model.ValidatedOfferData
+import com.courtbook.data.model.VenueDto
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -56,6 +80,9 @@ interface CourtBookApi {
   @POST("slots/hold")
   suspend fun holdSlots(@Body request: HoldSlotsRequest): Response<ApiResponse<HoldSlotsResponse>>
 
+  @POST("slots/release")
+  suspend fun releaseHold(@Body request: ReleaseSlotsRequest): Response<ApiResponse<Map<String, Any>>>
+
   // --- BOOKINGS ---
   @POST("bookings")
   suspend fun createBooking(@Body request: CreateBookingRequest): Response<ApiResponse<BookingDto>>
@@ -93,7 +120,7 @@ interface CourtBookApi {
   suspend fun blockSlots(@Body request: BlockSlotsRequest): Response<ApiResponse<Map<String, Int>>>
 
   @POST("admin/slots/unblock")
-  suspend fun unblockSlots(@Body body: Map<String, List<String>>): Response<ApiResponse<Map<String, Int>>>
+  suspend fun unblockSlots(@Body request: UnblockSlotsRequest): Response<ApiResponse<Map<String, Int>>>
 
   @GET("admin/analytics/revenue")
   suspend fun getRevenueAnalytics(): Response<ApiResponse<List<RevenueByVenueDto>>>
@@ -103,4 +130,22 @@ interface CourtBookApi {
 
   @GET("admin/users")
   suspend fun getAllUsers(): Response<ApiListResponse<UserDto>>
+
+  @POST("venues")
+  suspend fun createVenue(@Body request: CreateVenueRequest): Response<ApiResponse<VenueDto>>
+
+  @POST("courts")
+  suspend fun createCourt(@Body request: CreateCourtRequest): Response<ApiResponse<CourtDto>>
+
+  @PATCH("courts/{id}")
+  suspend fun updateCourt(
+      @Path("id") id: String,
+      @Body request: UpdateCourtRequest
+  ): Response<ApiResponse<CourtDto>>
+
+  @POST("admin/courts/{id}/generate-slots")
+  suspend fun generateSlots(
+      @Path("id") id: String,
+      @Body request: GenerateSlotsRequest
+  ): Response<ApiResponse<Map<String, Any>>>
 }

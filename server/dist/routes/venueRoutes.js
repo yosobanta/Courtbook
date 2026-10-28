@@ -7,4 +7,6 @@ const router = (0, express_1.Router)();
 router.get('/', venueController_1.VenueController.getVenues);
 router.get('/:id', venueController_1.VenueController.getVenueById);
 router.post('/', auth_1.authenticate, (0, auth_1.authorize)('ADMIN'), venueController_1.VenueController.createVenue);
+router.patch('/:id', auth_1.authenticate, (0, auth_1.authorize)('ADMIN'), venueController_1.VenueController.updateVenue);
+router.put('/:id', auth_1.authenticate, (0, auth_1.authorize)('ADMIN'), venueController_1.VenueController.updateVenue);
 exports.default = router;

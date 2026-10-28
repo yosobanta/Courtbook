@@ -39,16 +39,26 @@ fun MockPaymentScreen(
   Scaffold(
       topBar = {
         TopAppBar(
-            title = { Text("Payment Checkout") },
+            title = {
+              Text(
+                  text = "Payment Checkout",
+                  fontWeight = FontWeight.Bold,
+                  fontSize = 18.sp,
+                  color = TextDeep
+              )
+            },
             navigationIcon = {
               IconButton(onClick = onNavigateBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = DarkTextPrimary)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextDeep)
               }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBg, titleContentColor = DarkTextPrimary)
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = CardSurface,
+                titleContentColor = TextDeep
+            )
         )
       },
-      containerColor = DarkBg
+      containerColor = WarmBg
   ) { paddingValues ->
     Column(
         modifier = Modifier
@@ -61,23 +71,37 @@ fun MockPaymentScreen(
         // Amount Due Banner
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = DarkSurfaceElevated)
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = CardSurface),
+            border = BorderStroke(1.dp, BorderSubtle),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
           Column(
-              modifier = Modifier.padding(20.dp),
+              modifier = Modifier.padding(24.dp),
               horizontalAlignment = Alignment.CenterHorizontally
           ) {
-            Text("Total Amount to Pay", color = DarkTextSecondary, fontSize = 13.sp)
+            Text("Total Amount to Pay", color = TextMuted, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "₹${uiState.finalAmount.toInt()}",
-                color = CourtGreen,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold
+                color = ForestGreen,
+                fontSize = 36.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = (-0.5).sp
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Simulated Payment Gateway", color = DarkTextSecondary, fontSize = 11.sp)
+            Surface(
+                color = SoftGreenSurface,
+                shape = RoundedCornerShape(6.dp)
+            ) {
+              Text(
+                  text = "Simulated Payment Gateway",
+                  color = ForestGreen,
+                  fontSize = 11.sp,
+                  fontWeight = FontWeight.SemiBold,
+                  modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+              )
+            }
           }
         }
 
@@ -92,9 +116,10 @@ fun MockPaymentScreen(
 
         Text(
             text = "Select Payment Method",
-            style = MaterialTheme.typography.titleMedium,
-            color = DarkTextPrimary,
-            fontWeight = FontWeight.Bold
+            color = TextDeep,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (-0.3).sp
         )
 
         PaymentMethodOption(
@@ -121,44 +146,73 @@ fun MockPaymentScreen(
         // Security Notice Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(10.dp),
-            colors = CardDefaults.cardColors(containerColor = DarkSurface)
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = SoftGreenSurface),
+            border = BorderStroke(1.dp, BorderSubtle)
         ) {
-          Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Security, contentDescription = null, tint = CourtGreen, modifier = Modifier.size(20.dp))
+          Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.Security, contentDescription = null, tint = ForestGreen, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = "Backed by MongoDB ACID transactions with snapshot isolation and concurrency safeguards.",
-                color = DarkTextSecondary,
-                fontSize = 11.sp
+                color = ForestGreen,
+                fontSize = 11.sp,
+                lineHeight = 16.sp
             )
           }
         }
       }
 
-      // Complete Payment Button
-      Button(
-          onClick = {
-            viewModel.confirmPayment(
-                courtId = courtId,
-                slotIds = slotIds,
-                paymentMethod = selectedMethod,
-                onSuccess = onPaymentSuccess
-            )
-          },
-          enabled = !uiState.isSubmittingBooking,
-          modifier = Modifier.fillMaxWidth().height(52.dp),
-          shape = RoundedCornerShape(12.dp),
-          colors = ButtonDefaults.buttonColors(containerColor = CourtGreen)
+      Column(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.spacedBy(6.dp)
       ) {
-        if (uiState.isSubmittingBooking) {
-          CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-        } else {
+        // Complete Payment Button
+        Button(
+            onClick = {
+              viewModel.confirmPayment(
+                  courtId = courtId,
+                  slotIds = slotIds,
+                  paymentMethod = selectedMethod,
+                  onSuccess = onPaymentSuccess
+              )
+            },
+            enabled = !uiState.isSubmittingBooking,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = ForestGreen,
+                disabledContainerColor = ForestGreen.copy(alpha = 0.6f)
+            )
+        ) {
+          if (uiState.isSubmittingBooking) {
+            CircularProgressIndicator(color = ElectricLime, modifier = Modifier.size(24.dp), strokeWidth = 2.5.dp)
+          } else {
+            Text(
+                text = "Pay ₹${uiState.finalAmount.toInt()}",
+                color = ElectricLime,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+          }
+        }
+
+        TextButton(
+            onClick = {
+              viewModel.cancelAndReleaseHold(slotIds) {
+                onNavigateBack()
+              }
+            },
+            enabled = !uiState.isSubmittingBooking
+        ) {
           Text(
-              text = "Pay ₹${uiState.finalAmount.toInt()}",
-              color = Color.Black,
-              fontSize = 16.sp,
-              fontWeight = FontWeight.Bold
+              text = "Cancel & Release Slot",
+              color = TextMuted,
+              fontSize = 13.sp,
+              fontWeight = FontWeight.SemiBold
           )
         }
       }
@@ -173,26 +227,32 @@ private fun PaymentMethodOption(
     isSelected: Boolean,
     onSelect: () -> Unit
 ) {
-  val border = if (isSelected) BorderStroke(1.5.dp, CourtGreen) else BorderStroke(1.dp, DarkBorder)
-  val bg = if (isSelected) CourtGreen.copy(alpha = 0.1f) else DarkSurfaceElevated
+  val border = if (isSelected) BorderStroke(2.dp, ForestGreen) else BorderStroke(1.dp, BorderSubtle)
+  val bg = if (isSelected) SoftGreenSurface else CardSurface
 
   Card(
       modifier = Modifier
           .fillMaxWidth()
           .clickable(onClick = onSelect),
-      shape = RoundedCornerShape(12.dp),
+      shape = RoundedCornerShape(14.dp),
       colors = CardDefaults.cardColors(containerColor = bg),
-      border = border
+      border = border,
+      elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 2.dp else 0.dp)
   ) {
     Row(
         modifier = Modifier.padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-      Icon(icon, contentDescription = null, tint = if (isSelected) CourtGreen else DarkTextSecondary, modifier = Modifier.size(22.dp))
+      Icon(
+          imageVector = icon,
+          contentDescription = null,
+          tint = if (isSelected) ForestGreen else TextMuted,
+          modifier = Modifier.size(22.dp)
+      )
       Spacer(modifier = Modifier.width(14.dp))
       Text(
           text = title,
-          color = DarkTextPrimary,
+          color = TextDeep,
           fontSize = 14.sp,
           fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
       )

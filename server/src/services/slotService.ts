@@ -97,19 +97,73 @@ export class SlotService {
   }
 
   /**
+   * Releases all expired HELD slots across the system back to AVAILABLE.
+   */
+  public static async releaseExpiredHolds(): Promise<number> {
+    const now = new Date();
+    const result = await Slot.updateMany(
+      {
+        status: 'HELD',
+        holdExpiresAt: { $lt: now },
+      },
+      {
+        $set: {
+          status: 'AVAILABLE',
+          heldBy: null,
+          holdExpiresAt: null,
+        },
+      }
+    );
+    return result.modifiedCount;
+  }
+
+  /**
+   * Explicitly releases held slots for a given user back to AVAILABLE.
+   */
+  public static async releaseHold(
+    userId: string,
+    slotIds?: string[]
+  ): Promise<{ releasedCount: number }> {
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+    const filter: any = {
+      status: 'HELD',
+      heldBy: userObjectId,
+    };
+
+    if (slotIds && Array.isArray(slotIds) && slotIds.length > 0) {
+      filter._id = { $in: slotIds.map((id) => new mongoose.Types.ObjectId(id)) };
+    }
+
+    const result = await Slot.updateMany(filter, {
+      $set: {
+        status: 'AVAILABLE',
+        heldBy: null,
+        holdExpiresAt: null,
+      },
+    });
+
+    return { releasedCount: result.modifiedCount };
+  }
+
+  /**
    * Retrieves slots for a specific court and date.
    * Performs lazy expiration check on any expired HELD slots.
    */
   public static async getCourtSlotsByDate(courtId: string, date: string): Promise<ISlot[]> {
     const now = new Date();
 
-    // Lazy cleanup: Release expired holds back to AVAILABLE
+    // Lazy cleanup: Release expired holds across the system or for this court/date
     await Slot.updateMany(
       {
-        courtId: new mongoose.Types.ObjectId(courtId),
-        date,
-        status: 'HELD',
-        holdExpiresAt: { $lt: now },
+        $or: [
+          { status: 'HELD', holdExpiresAt: { $lt: now } },
+          {
+            courtId: new mongoose.Types.ObjectId(courtId),
+            date,
+            status: 'HELD',
+            holdExpiresAt: { $lt: now },
+          },
+        ],
       },
       {
         $set: {

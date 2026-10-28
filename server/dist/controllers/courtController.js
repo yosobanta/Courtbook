@@ -7,6 +7,7 @@ exports.CourtController = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const Court_1 = require("../models/Court");
 const Venue_1 = require("../models/Venue");
+const Slot_1 = require("../models/Slot");
 const errors_1 = require("../utils/errors");
 class CourtController {
     static async getCourts(req, res, next) {
@@ -126,7 +127,73 @@ class CourtController {
                 images: images || [],
             });
             await court.save();
+            // Automatically generate 7 days of bookable slots
+            const now = new Date();
+            const slotsToInsert = [];
+            for (let day = 0; day < 7; day++) {
+                const d = new Date(now);
+                d.setDate(d.getDate() + day);
+                const dateStr = d.toISOString().split('T')[0];
+                for (let hour = 6; hour < 23; hour++) {
+                    const startTime = `${hour.toString().padStart(2, '0')}:00`;
+                    const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
+                    slotsToInsert.push({
+                        courtId: court._id,
+                        venueId: venue._id,
+                        date: dateStr,
+                        startTime,
+                        endTime,
+                        price: basePrice,
+                        status: 'AVAILABLE',
+                    });
+                }
+            }
+            if (slotsToInsert.length > 0) {
+                await Slot_1.Slot.insertMany(slotsToInsert);
+            }
             res.status(201).json({ success: true, data: court });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    static async updateCourt(req, res, next) {
+        try {
+            const { id } = req.params;
+            const { name, sport, isIndoor, surfaceType, capacity, basePrice, pricing, images, isActive } = req.body;
+            const court = await Court_1.Court.findById(id);
+            if (!court) {
+                throw new errors_1.NotFoundError('Court not found');
+            }
+            if (name !== undefined)
+                court.name = name;
+            if (sport !== undefined)
+                court.sport = sport.toUpperCase();
+            if (isIndoor !== undefined)
+                court.isIndoor = isIndoor;
+            if (surfaceType !== undefined)
+                court.surfaceType = surfaceType;
+            if (capacity !== undefined)
+                court.capacity = capacity;
+            if (basePrice !== undefined) {
+                court.basePrice = basePrice;
+                if (!pricing) {
+                    // Keep pricing in sync if not explicitly overridden
+                    court.pricing = {
+                        weekday: basePrice,
+                        weekend: basePrice + 100,
+                        peak: basePrice + 150
+                    };
+                }
+            }
+            if (pricing !== undefined)
+                court.pricing = { ...court.pricing, ...pricing };
+            if (images !== undefined)
+                court.images = images;
+            if (isActive !== undefined)
+                court.isActive = isActive;
+            await court.save();
+            res.status(200).json({ success: true, message: 'Court updated successfully', data: court });
         }
         catch (error) {
             next(error);

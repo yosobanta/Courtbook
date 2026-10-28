@@ -1,13 +1,16 @@
 package com.courtbook.navigation
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -25,6 +28,8 @@ import com.courtbook.ui.court.*
 import com.courtbook.ui.explore.*
 import com.courtbook.ui.home.*
 import com.courtbook.ui.mybookings.*
+import com.courtbook.analytics.ui.AIInsightsScreen
+import com.courtbook.analytics.ui.AIInsightsViewModel
 import com.courtbook.ui.profile.*
 import com.courtbook.ui.theme.*
 import kotlinx.coroutines.delay
@@ -40,8 +45,14 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
       SplashScreen(
           onFinish = {
             if (TokenManager.isLoggedIn()) {
-              navController.navigate(Screen.MainApp.route) {
-                popUpTo(Screen.Splash.route) { inclusive = true }
+              if (TokenManager.isAdmin()) {
+                navController.navigate(Screen.AdminDashboard.route) {
+                  popUpTo(Screen.Splash.route) { inclusive = true }
+                }
+              } else {
+                navController.navigate(Screen.MainApp.route) {
+                  popUpTo(Screen.Splash.route) { inclusive = true }
+                }
               }
             } else {
               navController.navigate(Screen.Login.route) {
@@ -58,8 +69,14 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
       LoginScreen(
           viewModel = authViewModel,
           onLoginSuccess = { isAdmin ->
-            navController.navigate(Screen.MainApp.route) {
-              popUpTo(Screen.Login.route) { inclusive = true }
+            if (isAdmin) {
+              navController.navigate(Screen.AdminDashboard.route) {
+                popUpTo(Screen.Login.route) { inclusive = true }
+              }
+            } else {
+              navController.navigate(Screen.MainApp.route) {
+                popUpTo(Screen.Login.route) { inclusive = true }
+              }
             }
           },
           onNavigateToRegister = {
@@ -91,6 +108,9 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
           },
           onNavigateToAdmin = {
             navController.navigate(Screen.AdminDashboard.route)
+          },
+          onNavigateToAIInsights = {
+            navController.navigate(Screen.AIInsights.route)
           },
           onLogout = {
             navController.navigate(Screen.Login.route) {
@@ -198,8 +218,13 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
       AdminDashboardScreen(
           viewModel = adminViewModel,
           onNavigateBack = { navController.popBackStack() },
-          onNavigateToManageSlots = { navController.navigate(Screen.ManageSlots.route) },
-          onNavigateToAnalytics = { navController.navigate(Screen.Analytics.route) }
+          onNavigateToPlayerView = { navController.navigate(Screen.MainApp.route) },
+          onNavigateToAIInsights = { navController.navigate(Screen.AIInsights.route) },
+          onLogout = {
+            navController.navigate(Screen.Login.route) {
+              popUpTo(0) { inclusive = true }
+            }
+          }
       )
     }
 
@@ -218,6 +243,14 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
           onNavigateBack = { navController.popBackStack() }
       )
     }
+
+    composable(Screen.AIInsights.route) {
+      val aiInsightsViewModel: AIInsightsViewModel = viewModel()
+      AIInsightsScreen(
+          viewModel = aiInsightsViewModel,
+          onNavigateBack = { navController.popBackStack() }
+      )
+    }
   }
 }
 
@@ -225,6 +258,7 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
 fun MainAppContainer(
     onNavigateToCourtDetails: (courtId: String) -> Unit,
     onNavigateToAdmin: () -> Unit,
+    onNavigateToAIInsights: () -> Unit,
     onLogout: () -> Unit
 ) {
   var selectedTab by remember { mutableStateOf<BottomTab>(BottomTab.Home) }
@@ -235,37 +269,49 @@ fun MainAppContainer(
 
   Scaffold(
       bottomBar = {
-        NavigationBar(
-            containerColor = DarkSurface,
-            tonalElevation = 8.dp
+        Surface(
+            color = CardSurface,
+            tonalElevation = 6.dp,
+            border = BorderStroke(1.dp, BorderSubtle)
         ) {
-          val tabs = listOf(BottomTab.Home, BottomTab.Explore, BottomTab.Bookings, BottomTab.Profile)
-          tabs.forEach { tab ->
-            val isSelected = selectedTab == tab
-            NavigationBarItem(
-                selected = isSelected,
-                onClick = { selectedTab = tab },
-                icon = {
-                  when (tab) {
-                    BottomTab.Home -> Icon(Icons.Default.Home, contentDescription = tab.title)
-                    BottomTab.Explore -> Icon(Icons.Default.Explore, contentDescription = tab.title)
-                    BottomTab.Bookings -> Icon(Icons.Default.ConfirmationNumber, contentDescription = tab.title)
-                    BottomTab.Profile -> Icon(Icons.Default.Person, contentDescription = tab.title)
-                  }
-                },
-                label = { Text(tab.title, fontSize = 11.sp) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color.Black,
-                    selectedTextColor = CourtGreen,
-                    indicatorColor = CourtGreen,
-                    unselectedIconColor = DarkTextSecondary,
-                    unselectedTextColor = DarkTextSecondary
-                )
-            )
+          NavigationBar(
+              containerColor = CardSurface,
+              tonalElevation = 0.dp
+          ) {
+            val tabs = listOf(BottomTab.Home, BottomTab.Explore, BottomTab.Bookings, BottomTab.Profile)
+            tabs.forEach { tab ->
+              val isSelected = selectedTab == tab
+              NavigationBarItem(
+                  selected = isSelected,
+                  onClick = { selectedTab = tab },
+                  icon = {
+                    when (tab) {
+                      BottomTab.Home -> Icon(Icons.Default.Home, contentDescription = tab.title)
+                      BottomTab.Explore -> Icon(Icons.Default.Explore, contentDescription = tab.title)
+                      BottomTab.Bookings -> Icon(Icons.Default.ConfirmationNumber, contentDescription = tab.title)
+                      BottomTab.Profile -> Icon(Icons.Default.Person, contentDescription = tab.title)
+                    }
+                  },
+                  label = {
+                    Text(
+                        text = tab.title,
+                        fontSize = 11.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                    )
+                  },
+                  colors = NavigationBarItemDefaults.colors(
+                      selectedIconColor = ForestGreen,
+                      selectedTextColor = ForestGreen,
+                      indicatorColor = ElectricLime,
+                      unselectedIconColor = TextMuted,
+                      unselectedTextColor = TextMuted
+                  )
+              )
+            }
           }
         }
       },
-      containerColor = DarkBg
+      containerColor = WarmBg
   ) { paddingValues ->
     Box(modifier = Modifier.padding(paddingValues)) {
       when (selectedTab) {
@@ -284,7 +330,8 @@ fun MainAppContainer(
         )
         BottomTab.Profile -> ProfileScreen(
             onLogout = onLogout,
-            onNavigateToAdmin = onNavigateToAdmin
+            onNavigateToAdmin = onNavigateToAdmin,
+            onNavigateToAIInsights = onNavigateToAIInsights
         )
       }
     }
@@ -301,28 +348,37 @@ fun SplashScreen(onFinish: () -> Unit) {
   Box(
       modifier = Modifier
           .fillMaxSize()
-          .background(DarkBg),
+          .background(WarmBg),
       contentAlignment = Alignment.Center
   ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      Icon(
-          imageVector = Icons.Default.SportsTennis,
-          contentDescription = "CourtBook",
-          tint = CourtGreen,
-          modifier = Modifier.size(72.dp)
-      )
-      Spacer(modifier = Modifier.height(16.dp))
+      Box(
+          modifier = Modifier
+              .size(96.dp)
+              .clip(CircleShape)
+              .background(SoftGreenSurface),
+          contentAlignment = Alignment.Center
+      ) {
+        Icon(
+            imageVector = Icons.Default.SportsTennis,
+            contentDescription = "CourtBook",
+            tint = ForestGreen,
+            modifier = Modifier.size(54.dp)
+        )
+      }
+      Spacer(modifier = Modifier.height(20.dp))
       Text(
           text = "CourtBook",
-          color = DarkTextPrimary,
-          fontSize = 32.sp,
-          fontWeight = FontWeight.Bold
+          color = TextDeep,
+          fontSize = 34.sp,
+          fontWeight = FontWeight.Bold,
+          letterSpacing = (-0.5).sp
       )
       Spacer(modifier = Modifier.height(4.dp))
       Text(
           text = "Find. Book. Play.",
-          color = CourtGreen,
-          fontSize = 14.sp,
+          color = ForestGreen,
+          fontSize = 15.sp,
           fontWeight = FontWeight.SemiBold
       )
     }

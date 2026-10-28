@@ -1,5 +1,6 @@
 package com.courtbook.ui.explore
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -27,56 +28,64 @@ fun ExploreScreen(
     viewModel: ExploreViewModel,
     onNavigateToCourtDetails: (courtId: String) -> Unit
 ) {
+  LaunchedEffect(Unit) {
+    viewModel.searchCourts()
+  }
+
   val uiState by viewModel.uiState.collectAsState()
 
   Column(
       modifier = Modifier
           .fillMaxSize()
-          .background(DarkBg)
-          .padding(horizontal = 16.dp)
+          .background(WarmBg)
+          .padding(horizontal = 20.dp)
   ) {
     Spacer(modifier = Modifier.height(24.dp))
     Text(
         text = "Explore Courts",
-        color = DarkTextPrimary,
-        fontSize = 26.sp,
-        fontWeight = FontWeight.Bold
+        color = TextDeep,
+        fontSize = 28.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = (-0.5).sp
     )
 
-    Spacer(modifier = Modifier.height(14.dp))
+    Spacer(modifier = Modifier.height(16.dp))
 
     // Search Input Field
     OutlinedTextField(
         value = uiState.searchQuery,
         onValueChange = { viewModel.updateSearchQuery(it) },
-        placeholder = { Text("Search by name, area or sport...") },
-        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = DarkTextSecondary) },
+        placeholder = { Text("Search by court name, venue or location...", color = TextMuted) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = ForestGreen) },
         trailingIcon = {
           if (uiState.searchQuery.isNotEmpty()) {
             IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-              Icon(Icons.Default.Close, contentDescription = "Clear", tint = DarkTextSecondary)
+              Icon(Icons.Default.Close, contentDescription = "Clear", tint = TextMuted)
             }
           }
         },
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = CourtGreen,
-            unfocusedBorderColor = DarkBorder,
-            focusedTextColor = DarkTextPrimary,
-            unfocusedTextColor = DarkTextPrimary
+            focusedContainerColor = CardSurface,
+            unfocusedContainerColor = CardSurface,
+            focusedBorderColor = ForestGreen,
+            unfocusedBorderColor = BorderSubtle,
+            focusedTextColor = TextDeep,
+            unfocusedTextColor = TextDeep
         ),
         singleLine = true
     )
 
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(modifier = Modifier.height(14.dp))
 
     // Horizontal Filter Strip
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
       viewModel.sports.forEach { sport ->
         SportCategoryChip(
@@ -90,10 +99,24 @@ fun ExploreScreen(
       FilterChip(
           selected = uiState.isIndoorOnly,
           onClick = { viewModel.toggleIndoorOnly() },
-          label = { Text("Indoor Only") },
+          label = {
+            Text(
+                text = "Indoor Only",
+                fontWeight = if (uiState.isIndoorOnly) FontWeight.Bold else FontWeight.Medium,
+                fontSize = 12.sp
+            )
+          },
+          shape = RoundedCornerShape(20.dp),
           colors = FilterChipDefaults.filterChipColors(
-              selectedContainerColor = CourtGreen,
-              selectedLabelColor = Color.Black
+              containerColor = CardSurface,
+              selectedContainerColor = ForestGreen,
+              labelColor = TextDeep,
+              selectedLabelColor = ElectricLime
+          ),
+          border = if (uiState.isIndoorOnly) null else FilterChipDefaults.filterChipBorder(
+              enabled = true,
+              selected = false,
+              borderColor = BorderSubtle
           )
       )
 
@@ -101,21 +124,35 @@ fun ExploreScreen(
       FilterChip(
           selected = uiState.maxPrice == 500.0,
           onClick = { viewModel.setMaxPrice(if (uiState.maxPrice == 500.0) null else 500.0) },
-          label = { Text("Under ₹500") },
+          label = {
+            Text(
+                text = "Under ₹500",
+                fontWeight = if (uiState.maxPrice == 500.0) FontWeight.Bold else FontWeight.Medium,
+                fontSize = 12.sp
+            )
+          },
+          shape = RoundedCornerShape(20.dp),
           colors = FilterChipDefaults.filterChipColors(
-              selectedContainerColor = CourtGreen,
-              selectedLabelColor = Color.Black
+              containerColor = CardSurface,
+              selectedContainerColor = ForestGreen,
+              labelColor = TextDeep,
+              selectedLabelColor = ElectricLime
+          ),
+          border = if (uiState.maxPrice == 500.0) null else FilterChipDefaults.filterChipBorder(
+              enabled = true,
+              selected = false,
+              borderColor = BorderSubtle
           )
       )
     }
 
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(modifier = Modifier.height(16.dp))
 
     // Results List
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-        contentPadding = PaddingValues(bottom = 80.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(bottom = 88.dp)
     ) {
       when {
         uiState.isLoading -> {
@@ -133,17 +170,17 @@ fun ExploreScreen(
           item {
             EmptyStateView(
                 title = "No matching courts found",
-                description = "Try adjusting your search criteria or price filters."
+                description = "Try adjusting your search query, selecting another sport, or clearing price filters."
             )
           }
         }
         else -> {
           item {
             Text(
-                text = "${uiState.courts.size} courts found",
-                color = DarkTextSecondary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
+                text = "Showing ${uiState.courts.size} court${if (uiState.courts.size > 1) "s" else ""}",
+                color = TextMuted,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
             )
           }
           items(uiState.courts) { court ->

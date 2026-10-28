@@ -39,3 +39,34 @@ data class PricingDto(
     @SerializedName("weekend") val weekend: Double = 500.0,
     @SerializedName("peak") val peak: Double = 550.0
 )
+
+data class CreateCourtRequest(
+    @SerializedName("venueId") val venueId: String,
+    @SerializedName("name") val name: String,
+    @SerializedName("sport") val sport: String,
+    @SerializedName("isIndoor") val isIndoor: Boolean = true,
+    @SerializedName("surfaceType") val surfaceType: String = "SYNTHETIC",
+    @SerializedName("capacity") val capacity: Int = 4,
+    @SerializedName("basePrice") val basePrice: Double,
+    @SerializedName("pricing") val pricing: PricingDto? = null
+)
+
+data class UpdateCourtRequest(
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("sport") val sport: String? = null,
+    @SerializedName("basePrice") val basePrice: Double? = null,
+    @SerializedName("pricing") val pricing: PricingDto? = null,
+    @SerializedName("isIndoor") val isIndoor: Boolean? = null,
+    @SerializedName("surfaceType") val surfaceType: String? = null,
+    @SerializedName("capacity") val capacity: Int? = null,
+    @SerializedName("isActive") val isActive: Boolean? = null
+)
+
+data class GenerateSlotsRequest(
+    @SerializedName("startDate") val startDate: String,
+    @SerializedName("endDate") val endDate: String,
+    @SerializedName("startHour") val startHour: Int = 6,
+    @SerializedName("endHour") val endHour: Int = 23,
+    @SerializedName("slotDurationMinutes") val slotDurationMinutes: Int = 60,
+    @SerializedName("price") val price: Double? = null
+)

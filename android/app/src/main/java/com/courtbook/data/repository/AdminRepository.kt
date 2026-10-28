@@ -2,10 +2,17 @@ package com.courtbook.data.repository
 
 import com.courtbook.data.model.BlockSlotsRequest
 import com.courtbook.data.model.BookingDto
+import com.courtbook.data.model.CourtDto
+import com.courtbook.data.model.CreateCourtRequest
+import com.courtbook.data.model.CreateVenueRequest
 import com.courtbook.data.model.DashboardSummaryDto
+import com.courtbook.data.model.GenerateSlotsRequest
 import com.courtbook.data.model.PopularSportDto
 import com.courtbook.data.model.RevenueByVenueDto
+import com.courtbook.data.model.UnblockSlotsRequest
+import com.courtbook.data.model.UpdateCourtRequest
 import com.courtbook.data.model.UserDto
+import com.courtbook.data.model.VenueDto
 import com.courtbook.data.remote.CourtBookApi
 import com.courtbook.data.remote.NetworkModule
 import kotlinx.coroutines.Dispatchers
@@ -61,7 +68,7 @@ class AdminRepository(private val api: CourtBookApi = NetworkModule.api) {
   suspend fun unblockSlots(slotIds: List<String>): Result<Int> =
       withContext(Dispatchers.IO) {
         try {
-          val response = api.unblockSlots(mapOf("slotIds" to slotIds))
+          val response = api.unblockSlots(UnblockSlotsRequest(slotIds))
           if (response.isSuccessful && response.body()?.data != null) {
             val count = response.body()!!.data?.get("modifiedCount") ?: slotIds.size
             Result.success(count)
@@ -111,6 +118,77 @@ class AdminRepository(private val api: CourtBookApi = NetworkModule.api) {
             Result.success(response.body()!!.data)
           } else {
             Result.failure(Exception(response.errorBody()?.string() ?: "Failed to load users"))
+          }
+        } catch (e: Exception) {
+          Result.failure(e)
+        }
+      }
+
+  suspend fun createVenue(request: CreateVenueRequest): Result<VenueDto> =
+      withContext(Dispatchers.IO) {
+        try {
+          val response = api.createVenue(request)
+          if (response.isSuccessful && response.body()?.data != null) {
+            Result.success(response.body()!!.data!!)
+          } else {
+            Result.failure(Exception(response.errorBody()?.string() ?: "Failed to create venue"))
+          }
+        } catch (e: Exception) {
+          Result.failure(e)
+        }
+      }
+
+  suspend fun createCourt(request: CreateCourtRequest): Result<CourtDto> =
+      withContext(Dispatchers.IO) {
+        try {
+          val response = api.createCourt(request)
+          if (response.isSuccessful && response.body()?.data != null) {
+            Result.success(response.body()!!.data!!)
+          } else {
+            Result.failure(Exception(response.errorBody()?.string() ?: "Failed to create court"))
+          }
+        } catch (e: Exception) {
+          Result.failure(e)
+        }
+      }
+
+  suspend fun updateCourt(courtId: String, request: UpdateCourtRequest): Result<CourtDto> =
+      withContext(Dispatchers.IO) {
+        try {
+          val response = api.updateCourt(courtId, request)
+          if (response.isSuccessful && response.body()?.data != null) {
+            Result.success(response.body()!!.data!!)
+          } else {
+            Result.failure(Exception(response.errorBody()?.string() ?: "Failed to update court rates"))
+          }
+        } catch (e: Exception) {
+          Result.failure(e)
+        }
+      }
+
+  suspend fun generateSlots(courtId: String, request: GenerateSlotsRequest): Result<String> =
+      withContext(Dispatchers.IO) {
+        try {
+          val response = api.generateSlots(courtId, request)
+          if (response.isSuccessful) {
+            val msg = response.body()?.message ?: "Slots generated successfully"
+            Result.success(msg)
+          } else {
+            Result.failure(Exception(response.errorBody()?.string() ?: "Failed to generate slots"))
+          }
+        } catch (e: Exception) {
+          Result.failure(e)
+        }
+      }
+
+  suspend fun cancelBooking(bookingId: String, reason: String = "Admin cancelled"): Result<BookingDto> =
+      withContext(Dispatchers.IO) {
+        try {
+          val response = api.cancelBooking(bookingId, mapOf("reason" to reason))
+          if (response.isSuccessful && response.body()?.data != null) {
+            Result.success(response.body()!!.data!!)
+          } else {
+            Result.failure(Exception(response.errorBody()?.string() ?: "Failed to cancel booking"))
           }
         } catch (e: Exception) {
           Result.failure(e)
