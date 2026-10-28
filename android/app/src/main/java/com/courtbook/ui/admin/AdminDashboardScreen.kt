@@ -1,6 +1,9 @@
 package com.courtbook.ui.admin
 
+import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -223,6 +226,7 @@ fun AdminDashboardScreen(
       // Dialogs
       if (showAddTurfDialog) {
         AddTurfDialog(
+            viewModel = viewModel,
             isSubmitting = uiState.isActionInProgress,
             onDismiss = { showAddTurfDialog = false },
             onSubmit = { name, address, city, sport, basePrice, imageUrl ->
@@ -1245,10 +1249,12 @@ private fun ServerPresetButton(
 
 @Composable
 private fun AddTurfDialog(
+    viewModel: AdminViewModel,
     isSubmitting: Boolean,
     onDismiss: () -> Unit,
     onSubmit: (name: String, address: String, city: String, sport: String, basePrice: Double, imageUrl: String) -> Unit
 ) {
+  val context = LocalContext.current
   var name by remember { mutableStateOf("") }
   var address by remember { mutableStateOf("") }
   var city by remember { mutableStateOf("Bangalore") }
@@ -1256,13 +1262,28 @@ private fun AddTurfDialog(
   val sportsList = listOf("FOOTBALL", "BADMINTON", "CRICKET", "TENNIS", "BASKETBALL", "TABLE_TENNIS")
   var basePriceStr by remember { mutableStateOf("600") }
   var photoUrl by remember { mutableStateOf("") }
-  var showUrlInput by remember { mutableStateOf(false) }
+  var isUploadingPhoto by remember { mutableStateOf(false) }
+  var isResolvingUrl by remember { mutableStateOf(false) }
+
+  val photoPickerLauncher = rememberLauncherForActivityResult(
+      contract = ActivityResultContracts.GetContent()
+  ) { uri: Uri? ->
+    if (uri != null) {
+      isUploadingPhoto = true
+      viewModel.uploadImageFromUri(context, uri) { uploadedUrl ->
+        isUploadingPhoto = false
+        if (!uploadedUrl.isNullOrBlank()) {
+          photoUrl = uploadedUrl
+        }
+      }
+    }
+  }
 
   Dialog(onDismissRequest = onDismiss) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(max = 620.dp),
+            .heightIn(max = 660.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = CardSurface),
         border = BorderStroke(1.dp, BorderSubtle)
@@ -1276,14 +1297,100 @@ private fun AddTurfDialog(
         Text("Add New Turf / Arena", fontWeight = FontWeight.Bold, color = TextDeep, fontSize = 18.sp)
         Text("Will automatically set up the venue, main playing spot, and generate 7-day bookable slots.", color = ForestGreen, fontSize = 11.sp)
 
-        // Photo Upload Placeholder & Selector
+        // Photo Upload & URL Section
+        Text("Turf Cover Photo:", color = TextMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+
+        // Option 1: Choose from Gallery Button
+        Button(
+            onClick = { photoPickerLauncher.launch("image/*") },
+            enabled = !isUploadingPhoto,
+            colors = ButtonDefaults.buttonColors(containerColor = SoftGreenSurface),
+            border = BorderStroke(1.dp, BorderSubtle),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp)
+        ) {
+          if (isUploadingPhoto) {
+            CircularProgressIndicator(color = ForestGreen, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Uploading Photo...", color = ForestGreen, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+          } else {
+            Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = ForestGreen, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Choose from Gallery / Photos", color = ForestGreen, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+          }
+        }
+
+        // Option 2: Enter URL or Google Photos share link (ALWAYS VISIBLE)
+        OutlinedTextField(
+            value = photoUrl,
+            onValueChange = { input ->
+              photoUrl = input
+              if (input.contains("photos.app.goo.gl") || input.contains("photos.google.com") || input.contains("drive.google.com")) {
+                isResolvingUrl = true
+                viewModel.resolveImageUrl(input) { resolved ->
+                  isResolvingUrl = false
+                  if (resolved.isNotBlank()) {
+                    photoUrl = resolved
+                  }
+                }
+              }
+            },
+            label = { Text(if (isResolvingUrl) "Resolving Google Photos Link..." else "Photo URL or Google Photos Link") },
+            placeholder = { Text("https://...") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            trailingIcon = {
+              if (isResolvingUrl) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = ForestGreen, strokeWidth = 2.dp)
+              } else if (photoUrl.isNotBlank()) {
+                IconButton(onClick = { photoUrl = "" }) {
+                  Icon(Icons.Default.Close, contentDescription = "Clear", tint = TextMuted, modifier = Modifier.size(18.dp))
+                }
+              }
+            }
+        )
+
+        // Preset photo chips
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+          val presets = listOf(
+              "Football" to "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?auto=format&fit=crop&w=800&q=80",
+              "Badminton" to "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80",
+              "Cricket" to "https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=800&q=80",
+              "Tennis" to "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=800&q=80"
+          )
+          presets.forEach { (label, url) ->
+            Surface(
+                modifier = Modifier.clickable { photoUrl = url },
+                shape = RoundedCornerShape(12.dp),
+                color = SoftGreenSurface,
+                border = BorderStroke(1.dp, BorderSubtle)
+            ) {
+              Text(
+                  text = "+ $label Preset",
+                  color = ForestGreen,
+                  fontSize = 10.sp,
+                  fontWeight = FontWeight.Medium,
+                  modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+              )
+            }
+          }
+        }
+
+        // Live Photo Preview Card
         if (photoUrl.isNotBlank()) {
           Box(
               modifier = Modifier
                   .fillMaxWidth()
-                  .height(115.dp)
+                  .height(120.dp)
                   .clip(RoundedCornerShape(12.dp))
-                  .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
+                  .border(1.5.dp, ForestGreen.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
           ) {
             AsyncImage(
                 model = photoUrl,
@@ -1291,91 +1398,18 @@ private fun AddTurfDialog(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
-            IconButton(
-                onClick = { photoUrl = "" },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(6.dp)
-                    .size(26.dp)
-                    .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+            Surface(
+                color = Color.Black.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(bottomStart = 8.dp),
+                modifier = Modifier.align(Alignment.TopEnd)
             ) {
-              Icon(Icons.Default.Close, contentDescription = "Remove Photo", tint = Color.White, modifier = Modifier.size(16.dp))
-            }
-          }
-        } else {
-          Surface(
-              modifier = Modifier
-                  .fillMaxWidth()
-                  .clip(RoundedCornerShape(12.dp))
-                  .clickable { showUrlInput = !showUrlInput },
-              color = SoftGreenSurface,
-              shape = RoundedCornerShape(12.dp),
-              border = BorderStroke(1.dp, BorderSubtle)
-          ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-              Icon(
-                  imageVector = Icons.Default.AddPhotoAlternate,
-                  contentDescription = "Upload Photo",
-                  tint = ForestGreen,
-                  modifier = Modifier.size(28.dp)
-              )
-              Spacer(modifier = Modifier.height(4.dp))
-              Text(
-                  text = "Add Turf Cover Photo",
-                  color = ForestGreen,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 13.sp
-              )
-              Text(
-                  text = "Tap to enter image URL or select photo preset",
-                  color = TextMuted,
-                  fontSize = 11.sp
-              )
-            }
-          }
-
-          if (showUrlInput) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-              OutlinedTextField(
-                  value = photoUrl,
-                  onValueChange = { photoUrl = it },
-                  label = { Text("Photo URL") },
-                  placeholder = { Text("https://images.unsplash.com/...") },
-                  modifier = Modifier.fillMaxWidth(),
-                  singleLine = true
-              )
-              // Preset photo chips
               Row(
-                  modifier = Modifier
-                      .fillMaxWidth()
-                      .horizontalScroll(rememberScrollState()),
-                  horizontalArrangement = Arrangement.spacedBy(6.dp)
+                  verticalAlignment = Alignment.CenterVertically,
+                  modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
               ) {
-                val presets = listOf(
-                    "Football" to "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?auto=format&fit=crop&w=800&q=80",
-                    "Badminton" to "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80",
-                    "Cricket" to "https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=800&q=80",
-                    "Tennis" to "https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?auto=format&fit=crop&w=800&q=80"
-                )
-                presets.forEach { (label, url) ->
-                  Surface(
-                      modifier = Modifier.clickable { photoUrl = url },
-                      shape = RoundedCornerShape(12.dp),
-                      color = SoftGreenSurface,
-                      border = BorderStroke(1.dp, BorderSubtle)
-                  ) {
-                    Text(
-                        text = "+ $label Preset",
-                        color = ForestGreen,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                  }
-                }
+                Icon(Icons.Default.Check, contentDescription = null, tint = ElectricLime, modifier = Modifier.size(14.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Photo Ready", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
               }
             }
           }

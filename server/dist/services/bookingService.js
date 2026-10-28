@@ -88,9 +88,9 @@ class BookingService {
                 $inc: { version: 1 },
             }, { session: supportsTransactions ? session : undefined });
             // CRITICAL CONCURRENCY CHECK:
-            // If the number of modified slots does NOT equal the number of requested slots,
+            // If the number of matched slots does NOT equal the number of requested slots,
             // another user concurrently booked or held at least one of them.
-            if (claimResult.modifiedCount !== slotIds.length) {
+            if (claimResult.matchedCount !== slotIds.length) {
                 if (supportsTransactions) {
                     await session.abortTransaction();
                 }

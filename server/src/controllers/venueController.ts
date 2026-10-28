@@ -3,6 +3,7 @@ import { Venue } from '../models/Venue';
 import { Court } from '../models/Court';
 import { Slot } from '../models/Slot';
 import { NotFoundError, BadRequestError } from '../utils/errors';
+import { normalizeImageUrl } from '../utils/imageUtils';
 
 export class VenueController {
   public static async getVenues(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -60,6 +61,17 @@ export class VenueController {
         throw new BadRequestError('Venue name, address, and city are required');
       }
 
+      // Normalize images (e.g. resolve Google Photos / Google Drive share links to direct CDN URLs)
+      const normalizedImages: string[] = [];
+      if (images && Array.isArray(images)) {
+        for (const img of images) {
+          if (img && typeof img === 'string') {
+            const resolved = await normalizeImageUrl(img);
+            if (resolved) normalizedImages.push(resolved);
+          }
+        }
+      }
+
       const venue = new Venue({
         name,
         address,
@@ -68,7 +80,7 @@ export class VenueController {
         amenities: amenities || ['PARKING', 'DRINKING_WATER'],
         operatingHours: operatingHours || { open: '06:00', close: '23:00' },
         contact: contact || {},
-        images: images || [],
+        images: normalizedImages,
       });
 
       await venue.save();
@@ -89,6 +101,7 @@ export class VenueController {
           weekend: courtPrice + 100,
           peak: courtPrice + 200,
         },
+        images: normalizedImages,
         isActive: true,
       });
       await defaultCourt.save();

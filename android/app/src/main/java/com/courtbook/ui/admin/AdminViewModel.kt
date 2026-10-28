@@ -1,6 +1,8 @@
 package com.courtbook.ui.admin
 
 import android.content.Context
+import android.net.Uri
+import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.courtbook.data.model.*
@@ -195,7 +197,8 @@ class AdminViewModel(
                   name = "${createdVenue.name} - Court 1",
                   sport = sport.uppercase(),
                   basePrice = basePrice,
-                  pricing = PricingDto(basePrice, basePrice + 100, basePrice + 150)
+                  pricing = PricingDto(basePrice, basePrice + 100, basePrice + 150),
+                  images = images
               )
               val courtRes = adminRepository.createCourt(courtReq)
               courtRes.fold(
@@ -217,6 +220,55 @@ class AdminViewModel(
           },
           onFailure = { error ->
             _uiState.value = _uiState.value.copy(isActionInProgress = false, errorMessage = error.message)
+          }
+      )
+    }
+  }
+
+  fun uploadImageFromUri(context: Context, uri: Uri, onResult: (String?) -> Unit) {
+    viewModelScope.launch {
+      try {
+        val inputStream = context.contentResolver.openInputStream(uri)
+        val bytes = inputStream?.readBytes()
+        inputStream?.close()
+
+        if (bytes == null || bytes.isEmpty()) {
+          onResult(null)
+          return@launch
+        }
+
+        val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+        val dataUrl = "data:image/jpeg;base64,$base64"
+
+        val res = adminRepository.uploadImage(base64Image = dataUrl)
+        res.fold(
+            onSuccess = { uploadRes ->
+              onResult(uploadRes.url)
+            },
+            onFailure = {
+              // Fallback to data URL directly if server upload endpoint had an issue
+              onResult(dataUrl)
+            }
+        )
+      } catch (e: Exception) {
+        onResult(null)
+      }
+    }
+  }
+
+  fun resolveImageUrl(url: String, onResult: (String) -> Unit) {
+    if (url.isBlank()) {
+      onResult("")
+      return
+    }
+    viewModelScope.launch {
+      val res = adminRepository.uploadImage(url = url.trim())
+      res.fold(
+          onSuccess = { uploadRes ->
+            onResult(uploadRes.url)
+          },
+          onFailure = {
+            onResult(url.trim())
           }
       )
     }

@@ -48,7 +48,8 @@ data class CreateCourtRequest(
     @SerializedName("surfaceType") val surfaceType: String = "SYNTHETIC",
     @SerializedName("capacity") val capacity: Int = 4,
     @SerializedName("basePrice") val basePrice: Double,
-    @SerializedName("pricing") val pricing: PricingDto? = null
+    @SerializedName("pricing") val pricing: PricingDto? = null,
+    @SerializedName("images") val images: List<String> = emptyList()
 )
 
 data class UpdateCourtRequest(

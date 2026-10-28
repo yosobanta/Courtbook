@@ -9,6 +9,7 @@ const Court_1 = require("../models/Court");
 const Venue_1 = require("../models/Venue");
 const Slot_1 = require("../models/Slot");
 const errors_1 = require("../utils/errors");
+const imageUtils_1 = require("../utils/imageUtils");
 class CourtController {
     static async getCourts(req, res, next) {
         try {
@@ -115,6 +116,20 @@ class CourtController {
             if (!venue) {
                 throw new errors_1.NotFoundError('Referenced venue not found');
             }
+            // Normalize images
+            let normalizedImages = [];
+            if (images && Array.isArray(images)) {
+                for (const img of images) {
+                    if (img && typeof img === 'string') {
+                        const resolved = await (0, imageUtils_1.normalizeImageUrl)(img);
+                        if (resolved)
+                            normalizedImages.push(resolved);
+                    }
+                }
+            }
+            if (normalizedImages.length === 0 && venue.images && venue.images.length > 0) {
+                normalizedImages = venue.images;
+            }
             const court = new Court_1.Court({
                 venueId,
                 name,
@@ -124,7 +139,7 @@ class CourtController {
                 capacity: capacity || 4,
                 basePrice,
                 pricing: pricing || { weekday: basePrice, weekend: basePrice + 100, peak: basePrice + 150 },
-                images: images || [],
+                images: normalizedImages,
             });
             await court.save();
             // Automatically generate 7 days of bookable slots

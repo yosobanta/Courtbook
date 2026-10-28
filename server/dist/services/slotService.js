@@ -80,17 +80,60 @@ class SlotService {
         return { createdOrUpdated: result.upsertedCount + result.modifiedCount };
     }
     /**
+     * Releases all expired HELD slots across the system back to AVAILABLE.
+     */
+    static async releaseExpiredHolds() {
+        const now = new Date();
+        const result = await Slot_1.Slot.updateMany({
+            status: 'HELD',
+            holdExpiresAt: { $lt: now },
+        }, {
+            $set: {
+                status: 'AVAILABLE',
+                heldBy: null,
+                holdExpiresAt: null,
+            },
+        });
+        return result.modifiedCount;
+    }
+    /**
+     * Explicitly releases held slots for a given user back to AVAILABLE.
+     */
+    static async releaseHold(userId, slotIds) {
+        const userObjectId = new mongoose_1.default.Types.ObjectId(userId);
+        const filter = {
+            status: 'HELD',
+            heldBy: userObjectId,
+        };
+        if (slotIds && Array.isArray(slotIds) && slotIds.length > 0) {
+            filter._id = { $in: slotIds.map((id) => new mongoose_1.default.Types.ObjectId(id)) };
+        }
+        const result = await Slot_1.Slot.updateMany(filter, {
+            $set: {
+                status: 'AVAILABLE',
+                heldBy: null,
+                holdExpiresAt: null,
+            },
+        });
+        return { releasedCount: result.modifiedCount };
+    }
+    /**
      * Retrieves slots for a specific court and date.
      * Performs lazy expiration check on any expired HELD slots.
      */
     static async getCourtSlotsByDate(courtId, date) {
         const now = new Date();
-        // Lazy cleanup: Release expired holds back to AVAILABLE
+        // Lazy cleanup: Release expired holds across the system or for this court/date
         await Slot_1.Slot.updateMany({
-            courtId: new mongoose_1.default.Types.ObjectId(courtId),
-            date,
-            status: 'HELD',
-            holdExpiresAt: { $lt: now },
+            $or: [
+                { status: 'HELD', holdExpiresAt: { $lt: now } },
+                {
+                    courtId: new mongoose_1.default.Types.ObjectId(courtId),
+                    date,
+                    status: 'HELD',
+                    holdExpiresAt: { $lt: now },
+                },
+            ],
         }, {
             $set: {
                 status: 'AVAILABLE',

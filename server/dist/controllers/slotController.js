@@ -36,5 +36,20 @@ class SlotController {
             next(error);
         }
     }
+    static async releaseHold(req, res, next) {
+        try {
+            const userId = req.user._id.toString();
+            const { slotIds } = req.body || {};
+            const result = await slotService_1.SlotService.releaseHold(userId, slotIds);
+            res.status(200).json({
+                success: true,
+                message: `Released ${result.releasedCount} held slot(s)`,
+                data: result,
+            });
+        }
+        catch (error) {
+            next(error);
+        }
+    }
 }
 exports.SlotController = SlotController;

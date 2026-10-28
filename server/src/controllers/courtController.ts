@@ -4,6 +4,7 @@ import { Court } from '../models/Court';
 import { Venue } from '../models/Venue';
 import { Slot } from '../models/Slot';
 import { NotFoundError, BadRequestError } from '../utils/errors';
+import { normalizeImageUrl } from '../utils/imageUtils';
 
 export class CourtController {
   public static async getCourts(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -123,6 +124,20 @@ export class CourtController {
         throw new NotFoundError('Referenced venue not found');
       }
 
+      // Normalize images
+      let normalizedImages: string[] = [];
+      if (images && Array.isArray(images)) {
+        for (const img of images) {
+          if (img && typeof img === 'string') {
+            const resolved = await normalizeImageUrl(img);
+            if (resolved) normalizedImages.push(resolved);
+          }
+        }
+      }
+      if (normalizedImages.length === 0 && venue.images && venue.images.length > 0) {
+        normalizedImages = venue.images;
+      }
+
       const court = new Court({
         venueId,
         name,
@@ -132,7 +147,7 @@ export class CourtController {
         capacity: capacity || 4,
         basePrice,
         pricing: pricing || { weekday: basePrice, weekend: basePrice + 100, peak: basePrice + 150 },
-        images: images || [],
+        images: normalizedImages,
       });
 
       await court.save();

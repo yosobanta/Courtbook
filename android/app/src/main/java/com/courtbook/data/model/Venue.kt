@@ -44,3 +44,14 @@ data class CreateVenueRequest(
     @SerializedName("images") val images: List<String> = emptyList(),
     @SerializedName("operatingHours") val operatingHours: OperatingHoursDto = OperatingHoursDto("06:00", "23:00")
 )
+
+data class UploadImageRequest(
+    @SerializedName("image") val image: String? = null,
+    @SerializedName("url") val url: String? = null,
+    @SerializedName("filename") val filename: String? = null
+)
+
+data class UploadImageResponse(
+    @SerializedName("url") val url: String,
+    @SerializedName("path") val path: String? = null
+)

@@ -11,6 +11,8 @@ import com.courtbook.data.model.PopularSportDto
 import com.courtbook.data.model.RevenueByVenueDto
 import com.courtbook.data.model.UnblockSlotsRequest
 import com.courtbook.data.model.UpdateCourtRequest
+import com.courtbook.data.model.UploadImageRequest
+import com.courtbook.data.model.UploadImageResponse
 import com.courtbook.data.model.UserDto
 import com.courtbook.data.model.VenueDto
 import com.courtbook.data.remote.CourtBookApi
@@ -189,6 +191,20 @@ class AdminRepository(private val api: CourtBookApi = NetworkModule.api) {
             Result.success(response.body()!!.data!!)
           } else {
             Result.failure(Exception(response.errorBody()?.string() ?: "Failed to cancel booking"))
+          }
+        } catch (e: Exception) {
+          Result.failure(e)
+        }
+      }
+
+  suspend fun uploadImage(base64Image: String? = null, url: String? = null): Result<UploadImageResponse> =
+      withContext(Dispatchers.IO) {
+        try {
+          val response = api.uploadImage(UploadImageRequest(image = base64Image, url = url))
+          if (response.isSuccessful && response.body()?.data != null) {
+            Result.success(response.body()!!.data!!)
+          } else {
+            Result.failure(Exception(response.errorBody()?.string() ?: "Failed to upload/resolve image"))
           }
         } catch (e: Exception) {
           Result.failure(e)

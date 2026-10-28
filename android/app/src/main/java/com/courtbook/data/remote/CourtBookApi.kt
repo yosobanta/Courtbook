@@ -21,6 +21,8 @@ import com.courtbook.data.model.RegisterRequest
 import com.courtbook.data.model.RevenueByVenueDto
 import com.courtbook.data.model.SlotDto
 import com.courtbook.data.model.UpdateCourtRequest
+import com.courtbook.data.model.UploadImageRequest
+import com.courtbook.data.model.UploadImageResponse
 import com.courtbook.data.model.UserDto
 import com.courtbook.data.model.ValidateOfferRequest
 import com.courtbook.data.model.ValidatedOfferData
@@ -148,4 +150,7 @@ interface CourtBookApi {
       @Path("id") id: String,
       @Body request: GenerateSlotsRequest
   ): Response<ApiResponse<Map<String, Any>>>
+
+  @POST("upload")
+  suspend fun uploadImage(@Body request: UploadImageRequest): Response<ApiResponse<UploadImageResponse>>
 }

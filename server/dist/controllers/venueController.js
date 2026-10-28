@@ -5,6 +5,7 @@ const Venue_1 = require("../models/Venue");
 const Court_1 = require("../models/Court");
 const Slot_1 = require("../models/Slot");
 const errors_1 = require("../utils/errors");
+const imageUtils_1 = require("../utils/imageUtils");
 class VenueController {
     static async getVenues(req, res, next) {
         try {
@@ -53,6 +54,17 @@ class VenueController {
             if (!name || !address || !city) {
                 throw new errors_1.BadRequestError('Venue name, address, and city are required');
             }
+            // Normalize images (e.g. resolve Google Photos / Google Drive share links to direct CDN URLs)
+            const normalizedImages = [];
+            if (images && Array.isArray(images)) {
+                for (const img of images) {
+                    if (img && typeof img === 'string') {
+                        const resolved = await (0, imageUtils_1.normalizeImageUrl)(img);
+                        if (resolved)
+                            normalizedImages.push(resolved);
+                    }
+                }
+            }
             const venue = new Venue_1.Venue({
                 name,
                 address,
@@ -61,7 +73,7 @@ class VenueController {
                 amenities: amenities || ['PARKING', 'DRINKING_WATER'],
                 operatingHours: operatingHours || { open: '06:00', close: '23:00' },
                 contact: contact || {},
-                images: images || [],
+                images: normalizedImages,
             });
             await venue.save();
             // Automatically create a main court so the turf is immediately visible and playable by players
@@ -80,6 +92,7 @@ class VenueController {
                     weekend: courtPrice + 100,
                     peak: courtPrice + 200,
                 },
+                images: normalizedImages,
                 isActive: true,
             });
             await defaultCourt.save();
