@@ -25,6 +25,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 import com.courtbook.ui.components.*
 import com.courtbook.ui.theme.*
@@ -54,11 +60,31 @@ fun HomeScreen(
       Column {
         val playerName = uiState.user?.name?.split(" ")?.firstOrNull() ?: "Player"
         Text(
-            text = "Hi, $playerName 👋",
-            color = TextDeep,
+            text = buildAnnotatedString {
+              withStyle(
+                  SpanStyle(
+                      fontFamily = FontFamily.Default,
+                      fontWeight = FontWeight.Bold,
+                      color = TextDeep
+                  )
+              ) {
+                append("Hi, ")
+              }
+              withStyle(
+                  SpanStyle(
+                      fontFamily = FontFamily.Serif,
+                      fontStyle = FontStyle.Italic,
+                      fontWeight = FontWeight.Bold,
+                      color = TextDeep
+                  )
+              ) {
+                append(playerName)
+              }
+            },
             fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = (-0.5).sp
+            letterSpacing = (-0.5).sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
         Spacer(modifier = Modifier.height(3.dp))
         Text(
