@@ -18,17 +18,21 @@ class CourtRepository(private val api: CourtBookApi = NetworkModule.api) {
       search: String? = null,
       isIndoor: Boolean? = null,
       minPrice: Double? = null,
-      maxPrice: Double? = null
+      maxPrice: Double? = null,
+      venueId: String? = null,
+      includeInactive: Boolean? = null
   ): Result<List<CourtDto>> =
       withContext(Dispatchers.IO) {
         try {
           val response =
               api.getCourts(
                   sport = if (sport == "ALL") null else sport,
+                  venueId = venueId,
                   search = search,
                   isIndoor = isIndoor,
                   minPrice = minPrice,
-                  maxPrice = maxPrice)
+                  maxPrice = maxPrice,
+                  includeInactive = includeInactive)
           if (response.isSuccessful && response.body() != null) {
             Result.success(response.body()!!.data)
           } else {
@@ -116,10 +120,14 @@ class CourtRepository(private val api: CourtBookApi = NetworkModule.api) {
         }
       }
 
-  suspend fun getVenues(city: String? = null, search: String? = null): Result<List<VenueDto>> =
+  suspend fun getVenues(
+      city: String? = null,
+      search: String? = null,
+      includeInactive: Boolean? = null
+  ): Result<List<VenueDto>> =
       withContext(Dispatchers.IO) {
         try {
-          val response = api.getVenues(city = city, search = search)
+          val response = api.getVenues(city = city, search = search, includeInactive = includeInactive)
           if (response.isSuccessful && response.body() != null) {
             Result.success(response.body()!!.data)
           } else {

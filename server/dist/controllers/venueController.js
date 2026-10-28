@@ -9,8 +9,11 @@ const imageUtils_1 = require("../utils/imageUtils");
 class VenueController {
     static async getVenues(req, res, next) {
         try {
-            const { city, search } = req.query;
-            const query = { isActive: true };
+            const { city, search, includeInactive } = req.query;
+            const query = {};
+            if (includeInactive !== 'true') {
+                query.isActive = true;
+            }
             if (city) {
                 query.city = new RegExp(String(city), 'i');
             }
@@ -31,11 +34,16 @@ class VenueController {
     static async getVenueById(req, res, next) {
         try {
             const { id } = req.params;
+            const { includeInactive } = req.query;
             const venue = await Venue_1.Venue.findById(id);
             if (!venue) {
                 throw new errors_1.NotFoundError('Venue not found');
             }
-            const courts = await Court_1.Court.find({ venueId: venue._id, isActive: true });
+            const courtQuery = { venueId: venue._id };
+            if (includeInactive !== 'true') {
+                courtQuery.isActive = true;
+            }
+            const courts = await Court_1.Court.find(courtQuery);
             res.status(200).json({
                 success: true,
                 data: {
@@ -65,10 +73,11 @@ class VenueController {
                     }
                 }
             }
+            const trimmedName = String(name).trim();
             const venue = new Venue_1.Venue({
-                name,
-                address,
-                city,
+                name: trimmedName,
+                address: String(address).trim(),
+                city: String(city).trim(),
                 location: location || { type: 'Point', coordinates: [77.5946, 12.9716] },
                 amenities: amenities || ['PARKING', 'DRINKING_WATER'],
                 operatingHours: operatingHours || { open: '06:00', close: '23:00' },
@@ -76,12 +85,12 @@ class VenueController {
                 images: normalizedImages,
             });
             await venue.save();
-            // Automatically create a main court so the turf is immediately visible and playable by players
+            // Automatically create a main court with the exact entered name so the turf is immediately visible and playable
             const courtSport = (sport || 'FOOTBALL').toUpperCase();
             const courtPrice = basePrice ? Number(basePrice) : 800;
             const defaultCourt = new Court_1.Court({
                 venueId: venue._id,
-                name: `${name} Main Turf`,
+                name: trimmedName,
                 sport: courtSport,
                 isIndoor: false,
                 surfaceType: 'TURF',

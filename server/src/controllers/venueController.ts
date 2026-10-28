@@ -8,8 +8,12 @@ import { normalizeImageUrl } from '../utils/imageUtils';
 export class VenueController {
   public static async getVenues(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { city, search } = req.query;
-      const query: any = { isActive: true };
+      const { city, search, includeInactive } = req.query;
+      const query: any = {};
+
+      if (includeInactive !== 'true') {
+        query.isActive = true;
+      }
 
       if (city) {
         query.city = new RegExp(String(city), 'i');
@@ -33,13 +37,18 @@ export class VenueController {
   public static async getVenueById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id } = req.params;
+      const { includeInactive } = req.query;
       const venue = await Venue.findById(id);
 
       if (!venue) {
         throw new NotFoundError('Venue not found');
       }
 
-      const courts = await Court.find({ venueId: venue._id, isActive: true });
+      const courtQuery: any = { venueId: venue._id };
+      if (includeInactive !== 'true') {
+        courtQuery.isActive = true;
+      }
+      const courts = await Court.find(courtQuery);
 
       res.status(200).json({
         success: true,
@@ -72,10 +81,11 @@ export class VenueController {
         }
       }
 
+      const trimmedName = String(name).trim();
       const venue = new Venue({
-        name,
-        address,
-        city,
+        name: trimmedName,
+        address: String(address).trim(),
+        city: String(city).trim(),
         location: location || { type: 'Point', coordinates: [77.5946, 12.9716] },
         amenities: amenities || ['PARKING', 'DRINKING_WATER'],
         operatingHours: operatingHours || { open: '06:00', close: '23:00' },
@@ -85,12 +95,12 @@ export class VenueController {
 
       await venue.save();
 
-      // Automatically create a main court so the turf is immediately visible and playable by players
+      // Automatically create a main court with the exact entered name so the turf is immediately visible and playable
       const courtSport = (sport || 'FOOTBALL').toUpperCase();
       const courtPrice = basePrice ? Number(basePrice) : 800;
       const defaultCourt = new Court({
         venueId: venue._id,
-        name: `${name} Main Turf`,
+        name: trimmedName,
         sport: courtSport,
         isIndoor: false,
         surfaceType: 'TURF',

@@ -13,8 +13,11 @@ const imageUtils_1 = require("../utils/imageUtils");
 class CourtController {
     static async getCourts(req, res, next) {
         try {
-            const { sport, venueId, isIndoor, minPrice, maxPrice, search } = req.query;
-            const query = { isActive: true };
+            const { sport, venueId, isIndoor, minPrice, maxPrice, search, includeInactive } = req.query;
+            const query = {};
+            if (includeInactive !== 'true') {
+                query.isActive = true;
+            }
             if (sport) {
                 query.sport = String(sport).toUpperCase();
             }

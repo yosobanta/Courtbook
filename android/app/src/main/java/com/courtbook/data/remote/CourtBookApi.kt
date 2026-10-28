@@ -4,6 +4,7 @@ import com.courtbook.data.model.ApiListResponse
 import com.courtbook.data.model.ApiResponse
 import com.courtbook.data.model.AuthResponseData
 import com.courtbook.data.model.BlockSlotsRequest
+import com.courtbook.data.model.UnblockSlotsRequest
 import com.courtbook.data.model.BookingDto
 import com.courtbook.data.model.CourtDto
 import com.courtbook.data.model.CreateBookingRequest
@@ -46,7 +47,8 @@ interface CourtBookApi {
   @GET("venues")
   suspend fun getVenues(
       @Query("city") city: String? = null,
-      @Query("search") search: String? = null
+      @Query("search") search: String? = null,
+      @Query("includeInactive") includeInactive: Boolean? = null
   ): Response<ApiListResponse<VenueDto>>
 
   @GET("venues/{id}")
@@ -59,7 +61,8 @@ interface CourtBookApi {
       @Query("isIndoor") isIndoor: Boolean? = null,
       @Query("minPrice") minPrice: Double? = null,
       @Query("maxPrice") maxPrice: Double? = null,
-      @Query("search") search: String? = null
+      @Query("search") search: String? = null,
+      @Query("includeInactive") includeInactive: Boolean? = null
   ): Response<ApiListResponse<CourtDto>>
 
   @GET("courts/{id}")

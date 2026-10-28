@@ -14,7 +14,8 @@ data class VenueDto(
     @SerializedName("images") val images: List<String> = emptyList(),
     @SerializedName("rating") val rating: RatingDto? = null,
     @SerializedName("distanceKm") val distanceKm: Double? = null,
-    @SerializedName("courts") val courts: List<CourtDto> = emptyList()
+    @SerializedName("courts") val courts: List<CourtDto> = emptyList(),
+    @SerializedName("isActive") val isActive: Boolean = true
 )
 
 data class LocationDto(
@@ -42,7 +43,9 @@ data class CreateVenueRequest(
     @SerializedName("city") val city: String,
     @SerializedName("amenities") val amenities: List<String> = listOf("PARKING", "DRINKING_WATER", "RESTROOM"),
     @SerializedName("images") val images: List<String> = emptyList(),
-    @SerializedName("operatingHours") val operatingHours: OperatingHoursDto = OperatingHoursDto("06:00", "23:00")
+    @SerializedName("operatingHours") val operatingHours: OperatingHoursDto = OperatingHoursDto("06:00", "23:00"),
+    @SerializedName("sport") val sport: String? = null,
+    @SerializedName("basePrice") val basePrice: Double? = null
 )
 
 data class UploadImageRequest(

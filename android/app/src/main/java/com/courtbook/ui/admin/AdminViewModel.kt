@@ -105,7 +105,7 @@ class AdminViewModel(
 
   fun initManageSlots() {
     viewModelScope.launch {
-      val courtsRes = courtRepository.getCourts()
+      val courtsRes = courtRepository.getCourts(includeInactive = true)
       courtsRes.fold(
           onSuccess = { courts ->
             val firstCourtId = courts.firstOrNull()?.id
@@ -124,8 +124,8 @@ class AdminViewModel(
   }
 
   private suspend fun loadVenuesAndCourtsInternal() {
-    val venuesRes = courtRepository.getVenues()
-    val courtsRes = courtRepository.getCourts()
+    val venuesRes = courtRepository.getVenues(includeInactive = true)
+    val courtsRes = courtRepository.getCourts(includeInactive = true)
 
     var venuesList: List<VenueDto> = _uiState.value.venues
     var courtsList: List<CourtDto> = _uiState.value.courts
@@ -187,33 +187,22 @@ class AdminViewModel(
   ) {
     _uiState.value = _uiState.value.copy(isActionInProgress = true, errorMessage = null)
     viewModelScope.launch {
-      val request = CreateVenueRequest(name = name, address = address, city = city, amenities = amenities, images = images)
+      val trimmedName = name.trim()
+      val request = CreateVenueRequest(
+          name = trimmedName,
+          address = address.trim(),
+          city = city.trim(),
+          amenities = amenities,
+          images = images,
+          sport = sport,
+          basePrice = basePrice
+      )
       val result = adminRepository.createVenue(request)
       result.fold(
           onSuccess = { createdVenue ->
-            if (!sport.isNullOrBlank() && basePrice != null && basePrice > 0) {
-              val courtReq = CreateCourtRequest(
-                  venueId = createdVenue.id,
-                  name = "${createdVenue.name} - Court 1",
-                  sport = sport.uppercase(),
-                  basePrice = basePrice,
-                  pricing = PricingDto(basePrice, basePrice + 100, basePrice + 150),
-                  images = images
-              )
-              val courtRes = adminRepository.createCourt(courtReq)
-              courtRes.fold(
-                  onSuccess = { createdCourt ->
-                    val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
-                    val cal = java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_YEAR, 7) }
-                    val nextWeek = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(cal.time)
-                    adminRepository.generateSlots(createdCourt.id, GenerateSlotsRequest(today, nextWeek, 6, 23))
-                  },
-                  onFailure = {}
-              )
-            }
             _uiState.value = _uiState.value.copy(
                 isActionInProgress = false,
-                successMessage = "Turf '${name}' created and ready for bookings!"
+                successMessage = "Turf '${trimmedName}' created and ready for bookings!"
             )
             refreshVenuesAndCourts()
             onSuccess()

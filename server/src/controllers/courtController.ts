@@ -9,8 +9,12 @@ import { normalizeImageUrl } from '../utils/imageUtils';
 export class CourtController {
   public static async getCourts(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { sport, venueId, isIndoor, minPrice, maxPrice, search } = req.query;
-      const query: any = { isActive: true };
+      const { sport, venueId, isIndoor, minPrice, maxPrice, search, includeInactive } = req.query;
+      const query: any = {};
+
+      if (includeInactive !== 'true') {
+        query.isActive = true;
+      }
 
       if (sport) {
         query.sport = String(sport).toUpperCase();
